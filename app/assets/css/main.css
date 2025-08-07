@@ -1,0 +1,462 @@
+@import "tailwindcss";
+
+/* 커스텀 스타일 */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* 라이트모드 텍스트 개선 */
+.text-gray-900 {
+  color: #111827 !important;
+  font-weight: 600 !important;
+}
+
+.text-gray-800 {
+  color: #1f2937 !important;
+  font-weight: 500 !important;
+}
+
+.text-gray-700 {
+  color: #374151 !important;
+  font-weight: 500 !important;
+}
+
+.text-gray-600 {
+  color: #4b5563 !important;
+  font-weight: 500 !important;
+}
+
+.text-gray-500 {
+  color: #6b7280 !important;
+  font-weight: 500 !important;
+}
+
+/* 제목 텍스트 강화 (라이트모드) */
+h1, h2, h3, h4, h5, h6 {
+  color: #111827 !important;
+  font-weight: 700 !important;
+}
+
+/* 설명 텍스트 개선 (라이트모드) */
+.text-sm {
+  color: #4b5563 !important;
+  font-weight: 500 !important;
+}
+
+/* 라이트모드에서 파란색 배경의 텍스트를 흰색으로 */
+.bg-blue-600,
+.bg-blue-700,
+.bg-blue-800,
+.bg-blue-900 {
+  color: #ffffff !important;
+}
+
+.bg-blue-600 *,
+.bg-blue-700 *,
+.bg-blue-800 *,
+.bg-blue-900 * {
+  color: #ffffff !important;
+}
+
+/* 캐릭터 카드 원형 아이콘 텍스트 강제 흰색 */
+.bg-blue-500 {
+  color: #ffffff !important;
+}
+
+.bg-blue-500 * {
+  color: #ffffff !important;
+}
+
+/* 라이트모드에서 회색 버튼의 텍스트를 흰색으로 */
+.bg-gray-500,
+.bg-gray-600,
+.bg-gray-700 {
+  color: #ffffff !important;
+}
+
+.bg-gray-500 *,
+.bg-gray-600 *,
+.bg-gray-700 * {
+  color: #ffffff !important;
+}
+
+/* 다크모드 강제 적용 */
+html.dark {
+  color-scheme: dark;
+}
+
+html.dark body {
+  background-color: #111827 !important;
+  color: #e5e7eb !important;
+}
+
+/* 다크모드에서 특정 요소들 강제 스타일링 */
+html.dark .bg-white {
+  background-color: #1f2937 !important;
+}
+
+html.dark .bg-gray-50 {
+  background-color: #111827 !important;
+}
+
+/* 텍스트 색상 개선 - 더 부드러운 색상 */
+html.dark .text-gray-900 {
+  color: #f9fafb !important;
+  font-weight: 700 !important;
+}
+
+html.dark .text-gray-800 {
+  color: #f3f4f6 !important;
+  font-weight: 600 !important;
+}
+
+html.dark .text-gray-700 {
+  color: #e5e7eb !important;
+  font-weight: 600 !important;
+}
+
+html.dark .text-gray-600 {
+  color: #d1d5db !important;
+  font-weight: 500 !important;
+}
+
+html.dark .text-gray-500 {
+  color: #9ca3af !important;
+  font-weight: 500 !important;
+}
+
+html.dark .text-gray-400 {
+  color: #9ca3af !important;
+  font-weight: 500 !important;
+}
+
+html.dark .text-gray-300 {
+  color: #d1d5db !important;
+  font-weight: 500 !important;
+}
+
+/* 선택된 메뉴 항목 개선 */
+html.dark .bg-blue-100 {
+  background-color: #1e40af !important;
+}
+
+html.dark .text-blue-600 {
+  color: #93c5fd !important;
+}
+
+html.dark .dark\:bg-blue-900 {
+  background-color: #1e3a8a !important;
+}
+
+html.dark .dark\:text-blue-400 {
+  color: #60a5fa !important;
+}
+
+/* 테두리 색상 개선 */
+html.dark .border-gray-200 {
+  border-color: #4b5563 !important;
+}
+
+html.dark .border-gray-300 {
+  border-color: #6b7280 !important;
+}
+
+/* 다크모드에서 hover 상태 개선 */
+html.dark .hover\:text-gray-700:hover {
+  color: #e5e7eb !important;
+}
+
+html.dark .hover\:text-gray-600:hover {
+  color: #d1d5db !important;
+}
+
+html.dark .hover\:text-gray-500:hover {
+  color: #9ca3af !important;
+}
+
+html.dark .hover\:text-gray-400:hover {
+  color: #9ca3af !important;
+}
+
+html.dark .hover\:text-gray-300:hover {
+  color: #d1d5db !important;
+}
+
+/* 다크모드에서 버튼 텍스트 개선 */
+html.dark button {
+  color: #e5e7eb !important;
+}
+
+html.dark button:hover {
+  color: #f3f4f6 !important;
+}
+
+/* 다크모드에서 링크 텍스트 개선 */
+html.dark a {
+  color: #60a5fa !important;
+}
+
+html.dark a:hover {
+  color: #93c5fd !important;
+}
+
+/* 다크모드에서 입력 필드 텍스트 개선 */
+html.dark input {
+  color: #e5e7eb !important;
+}
+
+html.dark input::placeholder {
+  color: #9ca3af !important;
+}
+
+html.dark textarea {
+  color: #e5e7eb !important;
+}
+
+html.dark textarea::placeholder {
+  color: #9ca3af !important;
+}
+
+/* 다크모드에서 select 요소 개선 */
+html.dark select {
+  color: #e5e7eb !important;
+}
+
+html.dark select option {
+  color: #e5e7eb !important;
+  background-color: #374151 !important;
+}
+
+/* 사이드바 메뉴 항목 개선 */
+html.dark .bg-blue-100.dark\:bg-blue-900 {
+  background-color: #1e3a8a !important;
+}
+
+html.dark .text-blue-600.dark\:text-blue-400 {
+  color: #60a5fa !important;
+}
+
+/* 카드 텍스트 개선 */
+html.dark .text-gray-600.dark\:text-gray-300 {
+  color: #d1d5db !important;
+}
+
+/* 빠른 액션 카드 텍스트 개선 */
+html.dark .text-gray-500 {
+  color: #9ca3af !important;
+  font-weight: 500 !important;
+}
+
+/* 제목 텍스트 강화 */
+html.dark h1, html.dark h2, html.dark h3, html.dark h4, html.dark h5, html.dark h6 {
+  color: #f9fafb !important;
+  font-weight: 700 !important;
+}
+
+/* 설명 텍스트 개선 */
+html.dark .text-sm {
+  color: #d1d5db !important;
+  font-weight: 500 !important;
+}
+
+/* 아이콘 색상 개선 */
+html.dark svg {
+  color: inherit !important;
+}
+
+/* 배경색 개선 */
+html.dark .bg-gray-100 {
+  background-color: #374151 !important;
+}
+
+html.dark .bg-gray-200 {
+  background-color: #4b5563 !important;
+}
+
+html.dark .bg-gray-300 {
+  background-color: #6b7280 !important;
+}
+
+/* 모달 제목 텍스트 강화 */
+.modal-title, .dialog-title {
+  color: #111827 !important;
+  font-weight: 700 !important;
+  font-size: 1.25rem !important;
+}
+
+html.dark .modal-title, html.dark .dialog-title {
+  color: #f9fafb !important;
+  font-weight: 700 !important;
+}
+
+/* 설명 텍스트 강화 */
+.description-text, .subtitle-text {
+  color: #4b5563 !important;
+  font-weight: 500 !important;
+}
+
+html.dark .description-text, html.dark .subtitle-text {
+  color: #d1d5db !important;
+  font-weight: 500 !important;
+}
+
+/* 숙제 카드 요소 개선 */
+html.dark .task-number {
+  color: #9ca3af !important;
+  font-weight: 600 !important;
+}
+
+html.dark .task-icon {
+  color: #6b7280 !important;
+}
+
+html.dark .task-icon:hover {
+  color: #9ca3af !important;
+}
+
+/* 휴지통 아이콘 개선 */
+html.dark .delete-icon {
+  color: #6b7280 !important;
+}
+
+html.dark .delete-icon:hover {
+  color: #ef4444 !important;
+}
+
+/* 빠른 액션 카드 배경 개선 - 어두운 파스텔톤 */
+html.dark .bg-blue-50 {
+  background-color: #1e3a8a !important;
+}
+
+html.dark .bg-purple-50 {
+  background-color: #581c87 !important;
+}
+
+html.dark .bg-orange-50 {
+  background-color: #7c2d12 !important;
+}
+
+html.dark .bg-green-50 {
+  background-color: #14532d !important;
+}
+
+html.dark .bg-red-50 {
+  background-color: #7f1d1d !important;
+}
+
+html.dark .bg-yellow-50 {
+  background-color: #713f12 !important;
+}
+
+/* 빠른 액션 카드 텍스트 강화 */
+html.dark .quick-action-card {
+  background-color: #374151 !important;
+}
+
+html.dark .quick-action-card .text-gray-500 {
+  color: #e5e7eb !important;
+  font-weight: 600 !important;
+}
+
+/* 숙제 관련 버튼 배경 개선 */
+html.dark .todo-button {
+  background-color: #1e3a8a !important;
+}
+
+html.dark .todo-button:hover {
+  background-color: #1e40af !important;
+}
+
+/* 캐릭터별 숙제 관리 링크 개선 */
+html.dark .character-todo-link {
+  background-color: #581c87 !important;
+}
+
+html.dark .character-todo-link:hover {
+  background-color: #6b21a8 !important;
+}
+
+/* 일반적인 카드 배경 개선 */
+html.dark .bg-white, html.dark .bg-gray-50 {
+  background-color: #374151 !important;
+}
+
+/* 라이트모드에서도 카드 배경 개선 */
+.bg-blue-50 {
+  background-color: #eff6ff !important;
+}
+
+.bg-purple-50 {
+  background-color: #faf5ff !important;
+}
+
+.bg-orange-50 {
+  background-color: #fff7ed !important;
+}
+
+.bg-green-50 {
+  background-color: #f0fdf4 !important;
+}
+
+.bg-red-50 {
+  background-color: #fef2f2 !important;
+}
+
+.bg-yellow-50 {
+  background-color: #fefce8 !important;
+}
+
+/* 파란색 배경의 텍스트를 흰색으로 변경 */
+html.dark .bg-blue-600 .text-white,
+html.dark .bg-blue-600 .text-gray-500,
+html.dark .bg-blue-600 .text-gray-600,
+html.dark .bg-blue-600 .text-gray-700,
+html.dark .bg-blue-600 .text-gray-800,
+html.dark .bg-blue-600 .text-gray-900 {
+  color: #ffffff !important;
+  font-weight: 600 !important;
+}
+
+/* 회색 버튼의 텍스트를 흰색으로 변경 */
+html.dark .bg-gray-500 .text-white,
+html.dark .bg-gray-500 .text-gray-500,
+html.dark .bg-gray-500 .text-gray-600,
+html.dark .bg-gray-500 .text-gray-700,
+html.dark .bg-gray-500 .text-gray-800,
+html.dark .bg-gray-500 .text-gray-900 {
+  color: #ffffff !important;
+  font-weight: 600 !important;
+}
+
+/* 파란색 배경의 모든 텍스트를 흰색으로 */
+html.dark .bg-blue-600,
+html.dark .bg-blue-700,
+html.dark .bg-blue-800,
+html.dark .bg-blue-900 {
+  color: #ffffff !important;
+}
+
+html.dark .bg-blue-600 *,
+html.dark .bg-blue-700 *,
+html.dark .bg-blue-800 *,
+html.dark .bg-blue-900 * {
+  color: #ffffff !important;
+}
+
+/* 회색 버튼의 모든 텍스트를 흰색으로 */
+html.dark .bg-gray-500,
+html.dark .bg-gray-600,
+html.dark .bg-gray-700 {
+  color: #ffffff !important;
+}
+
+html.dark .bg-gray-500 *,
+html.dark .bg-gray-600 *,
+html.dark .bg-gray-700 * {
+  color: #ffffff !important;
+} 
