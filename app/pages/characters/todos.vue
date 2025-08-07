@@ -56,7 +56,31 @@
               :key="todo.id"
               class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
             >
+              <!-- 체크박스 또는 반복횟수 표시 -->
+              <div v-if="getTodoTargetCount(todo.id) > 1" class="flex flex-col items-center space-y-1">
+                <!-- 반복횟수 표시 -->
+                <div class="text-center">
+                  <div class="text-lg font-bold text-blue-600 dark:text-blue-400">
+                    {{ getTodoCurrentCount(todo.id) }}/{{ getTodoTargetCount(todo.id) }}
+                  </div>
+                  <div class="text-xs text-gray-500 dark:text-gray-400">진행도</div>
+                </div>
+                <!-- 진행률 바 -->
+                <div class="w-12 h-1 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                  <div 
+                    class="h-full bg-blue-500 transition-all duration-300"
+                    :style="{ width: Math.min((getTodoCurrentCount(todo.id) / getTodoTargetCount(todo.id)) * 100, 100) + '%' }"
+                  ></div>
+                </div>
+                <!-- 완료 체크 표시 -->
+                <div v-if="isTodoCompleted(todo.id)" class="text-green-500">
+                  <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                  </svg>
+                </div>
+              </div>
               <input
+                v-else
                 type="checkbox"
                 :checked="isTodoCompleted(todo.id)"
                 @change="toggleTodo(todo.id, !isTodoCompleted(todo.id))"
@@ -75,6 +99,19 @@
                 <p v-if="todo.description" class="text-sm text-gray-600 dark:text-gray-400 mt-1">
                   {{ todo.description }}
                 </p>
+              </div>
+              <!-- 반복횟수 증가 버튼 -->
+              <div v-if="getTodoTargetCount(todo.id) > 1 && !isTodoCompleted(todo.id)" class="flex items-center space-x-2">
+                <button
+                  @click="incrementTodoCount(todo.id)"
+                  class="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center space-x-1"
+                  title="반복횟수 증가"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  <span>+1</span>
+                </button>
               </div>
               <button
                 @click="removeTodo(todo.id)"
@@ -103,7 +140,31 @@
               :key="todo.id"
               class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
             >
+              <!-- 체크박스 또는 반복횟수 표시 -->
+              <div v-if="getTodoTargetCount(todo.id) > 1" class="flex flex-col items-center space-y-1">
+                <!-- 반복횟수 표시 -->
+                <div class="text-center">
+                  <div class="text-lg font-bold text-blue-600 dark:text-blue-400">
+                    {{ getTodoCurrentCount(todo.id) }}/{{ getTodoTargetCount(todo.id) }}
+                  </div>
+                  <div class="text-xs text-gray-500 dark:text-gray-400">진행도</div>
+                </div>
+                <!-- 진행률 바 -->
+                <div class="w-12 h-1 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                  <div 
+                    class="h-full bg-blue-500 transition-all duration-300"
+                    :style="{ width: Math.min((getTodoCurrentCount(todo.id) / getTodoTargetCount(todo.id)) * 100, 100) + '%' }"
+                  ></div>
+                </div>
+                <!-- 완료 체크 표시 -->
+                <div v-if="isTodoCompleted(todo.id)" class="text-green-500">
+                  <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                  </svg>
+                </div>
+              </div>
               <input
+                v-else
                 type="checkbox"
                 :checked="isTodoCompleted(todo.id)"
                 @change="toggleTodo(todo.id, !isTodoCompleted(todo.id))"
@@ -123,6 +184,19 @@
                   {{ todo.description }}
                 </p>
               </div>
+              <!-- 반복횟수 증가 버튼 -->
+              <div v-if="getTodoTargetCount(todo.id) > 1 && !isTodoCompleted(todo.id)" class="flex items-center space-x-2">
+                <button
+                  @click="incrementTodoCount(todo.id)"
+                  class="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center space-x-1"
+                  title="반복횟수 증가"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  <span>+1</span>
+                </button>
+              </div>
               <button
                 @click="removeTodo(todo.id)"
                 class="text-red-500 hover:text-red-700 transition-colors"
@@ -136,21 +210,45 @@
           </div>
         </div>
 
-        <!-- 주말 숙제 -->
-        <div v-if="assignedWeekendTodos.length > 0" class="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm">
+        <!-- 월간 숙제 -->
+        <div v-if="assignedMonthlyTodos.length > 0" class="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm">
           <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center">
             <span class="bg-orange-100 dark:bg-orange-900/20 text-orange-800 dark:text-orange-300 px-2 py-1 rounded-full text-xs mr-2">
-              주말
+              월간
             </span>
-            주말 숙제
+            월간 숙제
           </h3>
           <div class="space-y-3">
             <div
-              v-for="todo in assignedWeekendTodos"
+              v-for="todo in assignedMonthlyTodos"
               :key="todo.id"
               class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
             >
+              <!-- 체크박스 또는 반복횟수 표시 -->
+              <div v-if="getTodoTargetCount(todo.id) > 1" class="flex flex-col items-center space-y-1">
+                <!-- 반복횟수 표시 -->
+                <div class="text-center">
+                  <div class="text-lg font-bold text-blue-600 dark:text-blue-400">
+                    {{ getTodoCurrentCount(todo.id) }}/{{ getTodoTargetCount(todo.id) }}
+                  </div>
+                  <div class="text-xs text-gray-500 dark:text-gray-400">진행도</div>
+                </div>
+                <!-- 진행률 바 -->
+                <div class="w-12 h-1 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                  <div 
+                    class="h-full bg-blue-500 transition-all duration-300"
+                    :style="{ width: Math.min((getTodoCurrentCount(todo.id) / getTodoTargetCount(todo.id)) * 100, 100) + '%' }"
+                  ></div>
+                </div>
+                <!-- 완료 체크 표시 -->
+                <div v-if="isTodoCompleted(todo.id)" class="text-green-500">
+                  <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                  </svg>
+                </div>
+              </div>
               <input
+                v-else
                 type="checkbox"
                 :checked="isTodoCompleted(todo.id)"
                 @change="toggleTodo(todo.id, !isTodoCompleted(todo.id))"
@@ -169,6 +267,19 @@
                 <p v-if="todo.description" class="text-sm text-gray-600 dark:text-gray-400 mt-1">
                   {{ todo.description }}
                 </p>
+              </div>
+              <!-- 반복횟수 증가 버튼 -->
+              <div v-if="getTodoTargetCount(todo.id) > 1 && !isTodoCompleted(todo.id)" class="flex items-center space-x-2">
+                <button
+                  @click="incrementTodoCount(todo.id)"
+                  class="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center space-x-1"
+                  title="반복횟수 증가"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  <span>+1</span>
+                </button>
               </div>
               <button
                 @click="removeTodo(todo.id)"
@@ -219,7 +330,7 @@
                 숙제 추가하기
               </h3>
               <p class="mt-2 text-blue-700 dark:text-blue-300">
-                캐릭터에게 숙제을 할당하거나 새로운 숙제을 생성할 수 있습니다.
+                캐릭터에게 숙제를 할당하거나 새로운 숙제를 생성할 수 있습니다.
               </p>
               <div class="mt-4 space-x-3">
                 <button
@@ -248,7 +359,7 @@
           </svg>
         </div>
         <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">캐릭터를 선택해주세요</h3>
-        <p class="text-gray-600 dark:text-gray-400">위의 캐릭터 버튼을 클릭하여 숙제을 관리할 캐릭터를 선택하세요.</p>
+        <p class="text-gray-600 dark:text-gray-400">위의 캐릭터 버튼을 클릭하여 숙제를 관리할 캐릭터를 선택하세요.</p>
       </div>
 
       <!-- 숙제 없음 상태 -->
@@ -258,8 +369,8 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
           </svg>
         </div>
-        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">숙제이 없습니다</h3>
-        <p class="text-gray-600 dark:text-gray-400">이 캐릭터에 할당된 숙제이 없습니다.</p>
+        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">숙제가 없습니다</h3>
+        <p class="text-gray-600 dark:text-gray-400">이 캐릭터에 할당된 숙제가 없습니다.</p>
         <div class="mt-4 space-x-3">
           <button
             @click="openAddTodoModal"
@@ -278,7 +389,7 @@
     </div>
 
     <!-- 숙제 할당 모달 -->
-    <div v-if="showAddTodoModal" class="fixed inset-0 bg-black bg-opacity-20 flex items-center justify-center z-50">
+    <div v-if="showAddTodoModal" class="fixed inset-0 flex items-center justify-center z-50" style="background-color: rgba(0, 0, 0, 0.5);">
       <div class="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[80vh] overflow-y-auto shadow-2xl">
         <div class="flex items-center justify-between mb-6">
           <h3 class="text-lg font-medium text-gray-900 dark:text-white">
@@ -310,7 +421,7 @@
               <option value="">모든 주기</option>
               <option value="daily">일간</option>
               <option value="weekly">주간</option>
-              <option value="weekend">주말</option>
+                              <option value="월간">월간</option>
             </select>
           </div>
         </div>
@@ -320,22 +431,8 @@
            <div
              v-for="todo in filteredTodos"
              :key="todo.id"
-             class="flex items-center p-4 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
-             @click="toggleTodoSelection(todo.id)"
+             class="flex items-center p-4 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
            >
-             <input
-               v-if="!isTodoAssigned(todo.id)"
-               type="checkbox"
-               :value="todo.id"
-               v-model="selectedTodoIds"
-               @click.stop
-               class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 mr-3"
-             />
-             <div v-else class="w-4 h-4 mr-3 flex items-center justify-center">
-               <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-               </svg>
-             </div>
              <div class="flex-1">
                <div class="flex items-center space-x-2 mb-2">
                  <span class="font-medium text-gray-900 dark:text-white">{{ todo.title }}</span>
@@ -348,7 +445,7 @@
                  <span v-if="todo.is_admin_todo" class="bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-300 px-2 py-1 rounded-full text-xs">
                    관리자
                  </span>
-                 <span v-if="isTodoAssigned(todo.id)" class="bg-gray-100 dark:bg-gray-900/20 text-gray-800 dark:text-gray-300 px-2 py-1 rounded-full text-xs">
+                 <span v-if="isTodoAssigned(todo.id)" class="bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300 px-2 py-1 rounded-full text-xs">
                    할당됨
                  </span>
                </div>
@@ -356,22 +453,33 @@
                  {{ todo.description }}
                </p>
              </div>
+             <!-- 토글 스위치 -->
+             <button
+               @click="toggleTodoSelection(todo.id)"
+               class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+               :class="getTodoToggleState(todo.id) ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'"
+             >
+               <span
+                 class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
+                 :class="getTodoToggleState(todo.id) ? 'translate-x-6' : 'translate-x-1'"
+               ></span>
+             </button>
            </div>
          </div>
 
-        <!-- 할당된 숙제이 없을 때 -->
+        <!-- 할당된 숙제가 없을 때 -->
         <div v-if="filteredTodos.length === 0" class="text-center py-8">
           <div class="text-gray-400 dark:text-gray-500 mb-4">
             <svg class="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
             </svg>
           </div>
-          <p class="text-gray-600 dark:text-gray-400">할당할 수 있는 숙제이 없습니다.</p>
+          <p class="text-gray-600 dark:text-gray-400">할당할 수 있는 숙제가 없습니다.</p>
         </div>
 
                  <div class="mt-6 flex justify-between items-center">
            <div class="text-sm text-gray-600 dark:text-gray-400">
-             {{ selectedTodoIds.length }}개 숙제 선택됨
+             {{ pendingChanges.size }}개 변경사항 대기 중
            </div>
            <div class="flex space-x-3">
              <button
@@ -381,11 +489,11 @@
                닫기
              </button>
              <button
-               @click="assignSelectedTodos"
-               :disabled="selectedTodoIds.length === 0 || assigning"
+               @click="applyChanges"
+               :disabled="pendingChanges.size === 0 || assigning"
                class="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-medium rounded-md transition-colors"
              >
-               {{ assigning ? '할당 중...' : '선택한 숙제 할당하기' }}
+               {{ assigning ? '적용 중...' : '변경하기' }}
              </button>
            </div>
          </div>
@@ -406,8 +514,9 @@ interface Todo {
   updated_at: string
   created_by: string
   is_admin_todo: boolean
-  repeat_cycle: 'daily' | 'weekly' | 'weekend'
-  progress_type: 'dungeon' | 'quest' | 'purchase' | 'other'
+  repeat_cycle: '없음' | '일간' | '주간' | '월간'
+  progress_type: 'dungeon' | 'quest' | 'purchase' | 'exchange' | 'other'
+  target_count?: number
 }
 
 interface Character {
@@ -427,6 +536,16 @@ interface TodoCharacter {
   is_completed: boolean
   completed_at: string | null
   completion_date: string
+  current_count: number
+  target_count: number
+}
+
+interface User {
+  id: string
+  name: string
+  email: string
+  organization_id: string | null
+  created_at: string
 }
 
 definePageMeta({
@@ -453,6 +572,7 @@ const searchQuery = ref('')
 const selectedCycle = ref('')
 const assigning = ref(false)
 const selectedTodoIds = ref<string[]>([])
+const pendingChanges = ref<Map<string, boolean>>(new Map())
 
 // 계산된 속성들 - 할당된 숙제들만 필터링
 const assignedTodos = computed(() => {
@@ -464,9 +584,9 @@ const assignedTodos = computed(() => {
   return todos.value.filter(todo => assignedTodoIds.includes(todo.id))
 })
 
-const assignedDailyTodos = computed(() => assignedTodos.value.filter(todo => todo.repeat_cycle === 'daily'))
-const assignedWeeklyTodos = computed(() => assignedTodos.value.filter(todo => todo.repeat_cycle === 'weekly'))
-const assignedWeekendTodos = computed(() => assignedTodos.value.filter(todo => todo.repeat_cycle === 'weekend'))
+const assignedDailyTodos = computed(() => assignedTodos.value.filter(todo => todo.repeat_cycle === '일간'))
+const assignedWeeklyTodos = computed(() => assignedTodos.value.filter(todo => todo.repeat_cycle === '주간'))
+const assignedMonthlyTodos = computed(() => assignedTodos.value.filter(todo => todo.repeat_cycle === '월간'))
 
 const assignedCount = computed(() => todoCharacters.value.filter(tc => {
   const today = new Date().toISOString().split('T')[0]
@@ -481,6 +601,58 @@ const completedCount = computed(() => todoCharacters.value.filter(tc => {
 const completionRate = computed(() => 
   assignedCount.value > 0 ? Math.round((completedCount.value / assignedCount.value) * 100) : 0
 )
+
+// 시스템 사용자 여부 확인
+const isSystemUser = computed(() => {
+  return userStore.user?.organization_id === null
+})
+
+// 진행현황 계산 함수
+const calculateProgressByCycle = (cycle: string) => {
+  const today = new Date().toISOString().split('T')[0]
+  
+  // 해당 주기의 숙제들
+  const cycleTodos = assignedTodos.value.filter(todo => todo.repeat_cycle === cycle)
+  const cycleTodoIds = cycleTodos.map(todo => todo.id)
+  
+  // 오늘 날짜의 해당 주기 숙제들
+  const todayCycleTodos = todoCharacters.value.filter(tc => 
+    cycleTodoIds.includes(tc.todo_id) && tc.completion_date === today
+  )
+  
+  const total = todayCycleTodos.length
+  const completed = todayCycleTodos.filter(tc => tc.is_completed).length
+  const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0
+  
+  // 진행 종류별 통계
+  const byType = { dungeon: 0, quest: 0, purchase: 0, other: 0 }
+  const byTypeTotal = { dungeon: 0, quest: 0, purchase: 0, other: 0 }
+  
+  todayCycleTodos.forEach(tc => {
+    const todo = cycleTodos.find(t => t.id === tc.todo_id)
+    if (todo) {
+      const type = todo.progress_type as keyof typeof byType
+      byTypeTotal[type]++
+      if (tc.is_completed) {
+        byType[type]++
+      }
+    }
+  })
+  
+  return {
+    total,
+    completed,
+    pending: total - completed,
+    completionRate,
+    byType,
+    byTypeTotal
+  }
+}
+
+// 일간/주간/주말 진행현황
+const dailyProgress = computed(() => calculateProgressByCycle('daily'))
+const weeklyProgress = computed(() => calculateProgressByCycle('weekly'))
+const monthlyProgress = computed(() => calculateProgressByCycle('월간'))
 
 // 필터링된 숙제 목록 (모달용)
 const filteredTodos = computed(() => {
@@ -590,28 +762,35 @@ const toggleTodo = async (todoId: string, isCompleted: boolean) => {
 const removeTodo = async (todoId: string) => {
   if (!selectedCharacter.value || removing.value) return
 
-  if (!confirm('정말로 이 숙제을 제거하시겠습니까?')) {
+  // 할당된 숙제 찾기 (날짜와 관계없이)
+  const todoCharacter = todoCharacters.value.find(tc => 
+    tc.todo_id === todoId && tc.character_id === selectedCharacter.value!.id
+  )
+
+  if (!todoCharacter) {
+    alert('할당된 숙제를 찾을 수 없습니다.')
+    return
+  }
+
+  if (!confirm('정말로 이 숙제를 제거하시겠습니까?')) {
     return
   }
 
   removing.value = true
   try {
-    const today = new Date().toISOString().split('T')[0]
-    const todoCharacter = todoCharacters.value.find(tc => 
-      tc.todo_id === todoId && tc.completion_date === today
-    )
+    const response = await $fetch(`/api/todos/${todoId}/characters/${selectedCharacter.value.id}`, {
+      method: 'DELETE'
+    })
 
-    if (todoCharacter) {
-      const response = await $fetch(`/api/todos/${todoId}/characters/${selectedCharacter.value.id}`, {
-        method: 'DELETE'
-      })
-
-      if (response.success) {
-        await loadTodoCharacters()
-      }
+    if (response.success) {
+      await loadTodoCharacters()
+      alert('숙제가 성공적으로 제거되었습니다.')
+    } else {
+      alert('숙제 제거에 실패했습니다.')
     }
   } catch (error) {
     console.error('Error removing todo:', error)
+    alert('숙제 제거 중 오류가 발생했습니다.')
   } finally {
     removing.value = false
   }
@@ -623,9 +802,55 @@ const getProgressTypeLabel = (type: string) => {
     dungeon: '던전',
     quest: '퀘스트',
     purchase: '구매',
+    exchange: '교환',
     other: '기타'
   }
   return labels[type as keyof typeof labels] || type
+}
+
+// 반복횟수 관련 함수들
+const getTodoTargetCount = (todoId: string) => {
+  if (!selectedCharacter.value) return 1
+  
+  const today = new Date().toISOString().split('T')[0]
+  const todoCharacter = todoCharacters.value.find(tc => 
+    tc.todo_id === todoId && 
+    tc.character_id === selectedCharacter.value?.id &&
+    tc.completion_date === today
+  )
+  
+  return todoCharacter?.target_count || 1
+}
+
+const getTodoCurrentCount = (todoId: string) => {
+  if (!selectedCharacter.value) return 0
+  
+  const today = new Date().toISOString().split('T')[0]
+  const todoCharacter = todoCharacters.value.find(tc => 
+    tc.todo_id === todoId && 
+    tc.character_id === selectedCharacter.value?.id &&
+    tc.completion_date === today
+  )
+  
+  return todoCharacter?.current_count || 0
+}
+
+const incrementTodoCount = async (todoId: string) => {
+  if (!selectedCharacter.value) return
+  
+  try {
+    const response = await $fetch(`/api/todos/${todoId}/characters/${selectedCharacter.value.id}/increment`, {
+      method: 'POST'
+    })
+    
+    if (response.success) {
+      await loadTodoCharacters()
+      console.log('반복횟수가 증가했습니다:', response.message)
+    }
+  } catch (error) {
+    console.error('반복횟수 증가 실패:', error)
+    alert('반복횟수 증가에 실패했습니다.')
+  }
 }
 
 // 주기 라벨
@@ -633,16 +858,15 @@ const getCycleLabel = (cycle: string) => {
   const labels = {
     daily: '일간',
     weekly: '주간',
-    weekend: '주말'
+            월간: '월간'
   }
   return labels[cycle as keyof typeof labels] || cycle
 }
 
-// 숙제이 이미 할당되었는지 확인
+// 숙제가 이미 할당되었는지 확인
 const isTodoAssigned = (todoId: string) => {
-  const today = new Date().toISOString().split('T')[0]
   return todoCharacters.value.some(tc => 
-    tc.todo_id === todoId && tc.completion_date === today
+    tc.todo_id === todoId && tc.character_id === selectedCharacter.value?.id
   )
 }
 
@@ -658,8 +882,7 @@ const assignTodo = async (todoId: string) => {
 
     if (response.success) {
       await loadTodoCharacters()
-      // 성공 메시지 표시 (선택사항)
-      alert('숙제이 성공적으로 할당되었습니다.')
+      alert('숙제가 성공적으로 할당되었습니다.')
     }
   } catch (error) {
     console.error('Error assigning todo:', error)
@@ -669,49 +892,81 @@ const assignTodo = async (todoId: string) => {
   }
 }
 
-// 선택된 숙제들 일괄 할당
-const assignSelectedTodos = async () => {
-  if (!selectedCharacter.value || assigning.value || selectedTodoIds.value.length === 0) return
+
+
+// 토글 상태 가져오기 (현재 할당 상태 + 대기 중인 변경사항)
+const getTodoToggleState = (todoId: string) => {
+  const currentState = isTodoAssigned(todoId)
+  const pendingState = pendingChanges.value.get(todoId)
+  
+  // 대기 중인 변경사항이 있으면 그것을 반환, 없으면 현재 상태 반환
+  return pendingState !== undefined ? pendingState : currentState
+}
+
+// 토글 선택 (실제 적용은 하지 않고 상태만 변경)
+const toggleTodoSelection = (todoId: string) => {
+  const currentState = isTodoAssigned(todoId)
+  const pendingState = pendingChanges.value.get(todoId)
+  
+  // 현재 실제 상태
+  const actualState = pendingState !== undefined ? pendingState : currentState
+  
+  // 반대 상태로 변경
+  pendingChanges.value.set(todoId, !actualState)
+}
+
+// 변경사항 적용하기
+const applyChanges = async () => {
+  if (!selectedCharacter.value || assigning.value || pendingChanges.value.size === 0) return
 
   assigning.value = true
   try {
-    const promises = selectedTodoIds.value.map(todoId => 
-      $fetch(`/api/todos/${todoId}/characters/${selectedCharacter.value!.id}`, {
-        method: 'POST'
-      })
-    )
+    const promises: Promise<any>[] = []
+    
+    for (const [todoId, newState] of pendingChanges.value) {
+      const currentState = isTodoAssigned(todoId)
+      
+      if (newState !== currentState) {
+        if (newState) {
+          // 할당
+          promises.push(
+            $fetch(`/api/todos/${todoId}/characters/${selectedCharacter.value!.id}`, {
+              method: 'POST'
+            }) as Promise<any>
+          )
+        } else {
+          // 해제
+          promises.push(
+            $fetch(`/api/todos/${todoId}/characters/${selectedCharacter.value!.id}`, {
+              method: 'DELETE'
+            }) as Promise<any>
+          )
+        }
+      }
+    }
 
-    const results = await Promise.all(promises)
-    const successCount = results.filter(result => result.success).length
+    if (promises.length > 0) {
+      const results = await Promise.all(promises)
+      const successCount = results.filter(result => result.success).length
 
-    if (successCount > 0) {
-      await loadTodoCharacters()
-      selectedTodoIds.value = [] // 선택 초기화
-      alert(`${successCount}개의 숙제이 성공적으로 할당되었습니다.`)
+      if (successCount > 0) {
+        await loadTodoCharacters()
+        pendingChanges.value.clear() // 대기 중인 변경사항 초기화
+        alert(`${successCount}개의 변경사항이 성공적으로 적용되었습니다.`)
+        showAddTodoModal.value = false
+      }
     }
   } catch (error) {
-    console.error('Error assigning todos:', error)
-    alert('숙제 할당 중 오류가 발생했습니다.')
+    console.error('Error applying changes:', error)
+    alert('변경사항 적용 중 오류가 발생했습니다.')
   } finally {
     assigning.value = false
   }
 }
 
-// 숙제 선택 토글
-const toggleTodoSelection = (todoId: string) => {
-  if (isTodoAssigned(todoId)) return // 이미 할당된 숙제은 선택 불가
-  
-  const index = selectedTodoIds.value.indexOf(todoId)
-  if (index > -1) {
-    selectedTodoIds.value.splice(index, 1)
-  } else {
-    selectedTodoIds.value.push(todoId)
-  }
-}
-
-// 모달 열기 시 선택 초기화
+// 모달 열기
 const openAddTodoModal = () => {
-  selectedTodoIds.value = []
+  pendingChanges.value.clear() // 대기 중인 변경사항 초기화
   showAddTodoModal.value = true
 }
 

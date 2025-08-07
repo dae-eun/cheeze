@@ -1,14 +1,26 @@
 import { createClient } from '@supabase/supabase-js'
-import { getCookie } from 'h3'
-import { authenticateUser } from '../../../../utils/auth'
+import { authenticateUser, refreshTokenAndGetUser } from '../../../../utils/auth'
 
 const config = useRuntimeConfig()
 const supabaseAdmin = createClient(config.public.supabaseUrl, config.supabaseServiceKey)
 
 export default defineEventHandler(async (event) => {
   try {
-    // 사용자 인증 확인
-    const user = authenticateUser(event)
+    // 사용자 인증 확인 (리프레시 토큰 자동 처리)
+    let user = await authenticateUser(event)
+    
+    // 리프레시 토큰으로 인증된 경우, 새로운 액세스 토큰 발급
+    if (user && !user.email) {
+      try {
+        user = await refreshTokenAndGetUser(event, supabaseAdmin)
+      } catch (refreshError) {
+        throw createError({
+          statusCode: 401,
+          statusMessage: '세션이 만료되었습니다. 다시 로그인해주세요.'
+        })
+      }
+    }
+    
     if (!user) {
       throw createError({
         statusCode: 401,
@@ -39,7 +51,7 @@ export default defineEventHandler(async (event) => {
       })
     }
 
-    // 숙제이 존재하는지 확인
+    // 숙제가 존재하는지 확인
     const { data: todo, error: todoError } = await supabaseAdmin
       .from('todos')
       .select('id')
@@ -49,7 +61,7 @@ export default defineEventHandler(async (event) => {
     if (todoError || !todo) {
       throw createError({
         statusCode: 404,
-        statusMessage: '숙제을 찾을 수 없습니다.'
+        statusMessage: '숙제를 찾을 수 없습니다.'
       })
     }
 
@@ -72,7 +84,7 @@ export default defineEventHandler(async (event) => {
 
     return {
       success: true,
-      message: '숙제이 성공적으로 제거되었습니다.'
+      message: '숙제가 성공적으로 제거되었습니다.'
     }
   } catch (error: any) {
     console.error('Delete todo character error:', error)

@@ -1,0 +1,13 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/reset-todos",
+      "schedule": "0 6 * * *"
+    }
+  ],
+  "functions": {
+    "server/api/cron/reset-todos.post.ts": {
+      "maxDuration": 30
+    }
+  }
+}

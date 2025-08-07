@@ -1,26 +1,31 @@
 import { createClient } from '@supabase/supabase-js'
-import { getTokenFromCookie, verifyAccessToken } from '../../utils/auth'
+import { authenticateUser, refreshTokenAndGetUser } from '../../utils/auth'
 
 const config = useRuntimeConfig()
 const supabaseAdmin = createClient(config.public.supabaseUrl, config.supabaseServiceKey)
 
 export default defineEventHandler(async (event) => {
   try {
-    // 인증 확인
-    const token = getTokenFromCookie(event, 'access_token')
-    if (!token) {
+    // 인증 확인 (리프레시 토큰 자동 처리)
+    let userData = await authenticateUser(event)
+    
+    if (!userData) {
       throw createError({
         statusCode: 401,
         statusMessage: '인증이 필요합니다.'
       })
     }
 
-    const user = await verifyAccessToken(token)
-    if (!user) {
-      throw createError({
-        statusCode: 401,
-        statusMessage: '유효하지 않은 토큰입니다.'
-      })
+    // 리프레시 토큰으로 인증된 경우, 새로운 액세스 토큰 발급
+    if (!userData.email) {
+      try {
+        userData = await refreshTokenAndGetUser(event, supabaseAdmin)
+      } catch (refreshError) {
+        throw createError({
+          statusCode: 401,
+          statusMessage: '세션이 만료되었습니다. 다시 로그인해주세요.'
+        })
+      }
     }
 
 
@@ -42,7 +47,7 @@ export default defineEventHandler(async (event) => {
       `)
 
     // 시스템(관리자) 숙제과 사용자 본인이 생성한 숙제만 표시
-    query = query.or(`is_admin_todo.eq.true,created_by.eq.${user.user_id}`)
+    query = query.or(`is_admin_todo.eq.true,created_by.eq.${userData.user_id}`)
 
     const { data: todos, error: todosError } = await query.order('created_at', { ascending: false })
 

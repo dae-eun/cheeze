@@ -29,7 +29,9 @@
     "dev": "nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
-    "postinstall": "nuxt prepare"
+    "postinstall": "nuxt prepare",
+    "cron": "bun run scripts/cron.ts",
+    "cron:dev": "bun run scripts/cron.ts & bun run dev"
   },
   "type": "module",
   "devDependencies": {

@@ -24,7 +24,7 @@ export default defineEventHandler(async (event) => {
     }
 
     const body = await readBody(event)
-    const { title, description, repeat_cycle, progress_type } = body
+    const { title, description, repeat_cycle, progress_type, target_count = 1 } = body
 
     // 입력 검증
     if (!title || title.trim() === '') {
@@ -35,7 +35,7 @@ export default defineEventHandler(async (event) => {
     }
 
     // 반복주기 검증
-    if (!repeat_cycle || !['daily', 'weekly', 'weekend'].includes(repeat_cycle)) {
+    if (!repeat_cycle || !['없음', '일간', '주간', '월간'].includes(repeat_cycle)) {
       throw createError({
         statusCode: 400,
         statusMessage: '올바른 반복주기를 선택해주세요.'
@@ -43,10 +43,18 @@ export default defineEventHandler(async (event) => {
     }
 
     // 진행종류 검증
-    if (!progress_type || !['dungeon', 'quest', 'purchase', 'other'].includes(progress_type)) {
+    if (!progress_type || !['dungeon', 'quest', 'purchase', 'exchange', 'other'].includes(progress_type)) {
       throw createError({
         statusCode: 400,
         statusMessage: '올바른 진행종류를 선택해주세요.'
+      })
+    }
+
+    // 목표 횟수 검증
+    if (target_count < 1) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: '목표 횟수는 1 이상이어야 합니다.'
       })
     }
 
@@ -71,6 +79,7 @@ export default defineEventHandler(async (event) => {
       description: description?.trim() || '',
       repeat_cycle: repeat_cycle,
       progress_type: progress_type,
+      target_count: target_count,
       created_by: user.user_id,
       organization_id: userData.organization_id || null,
       is_admin_todo: false

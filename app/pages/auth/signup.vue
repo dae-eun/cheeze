@@ -236,9 +236,14 @@ const form = ref({
   }>
 })
 
+interface Server {
+  id: string
+  name: string
+}
+
 const loading = ref(false)
 const error = ref('')
-const servers = ref([])
+const servers = ref<Server[]>([])
 
 // 서버 목록 로드
 const loadServers = async () => {

@@ -1,9 +1,25 @@
 <template>
   <div class="space-y-8">
+    <!-- 페이지 고유 헤더 -->
+    <div class="bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg p-6 text-white">
+      <div class="flex justify-between items-center">
+        <div>
+          <h1 class="text-3xl font-bold">사용자 관리</h1>
+          <p class="mt-1 opacity-90">모든 사용자를 조회하고 관리합니다</p>
+        </div>
+        <div class="flex items-center space-x-2">
+          <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+          </svg>
+          <span class="text-lg font-semibold">User Management</span>
+        </div>
+      </div>
+    </div>
+
     <!-- 헤더 섹션 -->
     <div class="flex justify-between items-center">
       <div>
-        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">사용자 관리</h1>
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white">사용자 관리</h2>
         <p class="text-gray-600 dark:text-gray-400 mt-1">모든 사용자를 조회하고 관리합니다</p>
       </div>
     </div>
@@ -75,13 +91,13 @@
             v-model="searchQuery"
             type="text"
             placeholder="이름 또는 이메일로 검색..."
-            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:text-white"
+            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
           />
         </div>
         <div class="flex gap-2">
           <select
             v-model="filterOrganization"
-            class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:text-white"
+            class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
           >
             <option value="">모든 조직</option>
             <option v-for="org in organizations" :key="org.id" :value="org.id">
@@ -90,7 +106,7 @@
           </select>
           <select
             v-model="sortBy"
-            class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:text-white"
+            class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
           >
             <option value="created_at">가입일순</option>
             <option value="name">이름순</option>
@@ -217,23 +233,71 @@
 </template>
 
 <script setup lang="ts">
+import { useAuth } from '~/composables/useAuth'
+
 definePageMeta({
-  layout: 'admin'
+  layout: 'admin',
+  title: '사용자 관리',
+  description: '모든 사용자를 조회하고 관리합니다'
+})
+
+// 페이지 고유 메타데이터 설정
+useHead({
+  title: '사용자 관리 - 관리자 패널',
+  meta: [
+    { name: 'description', content: '모든 사용자를 조회하고 관리합니다' },
+    { property: 'og:title', content: '사용자 관리' },
+    { property: 'og:description', content: '모든 사용자를 조회하고 관리합니다' }
+  ]
 })
 
 const supabase = useSupabase()
+const { checkAuth, startAutoRefresh } = useAuth()
 
-const users = ref([])
-const organizations = ref([])
+interface User {
+  id: string
+  name: string
+  email: string
+  organization_id: string | null
+  created_at: string
+  character_count?: number
+  characters?: Array<{
+    id: string
+    name: string
+    server_id: string
+    is_main: boolean
+    servers?: {
+      name: string
+    }
+  }>
+}
+
+interface Organization {
+  id: string
+  name: string
+}
+
+const users = ref<User[]>([])
+const organizations = ref<Organization[]>([])
 const loading = ref(true)
 const showUserModal = ref(false)
-const selectedUser = ref(null)
+const selectedUser = ref<User | null>(null)
 
 const searchQuery = ref('')
 const filterOrganization = ref('')
 const sortBy = ref('created_at')
 
-onMounted(() => {
+onMounted(async () => {
+  // 인증 확인
+  const isAuthenticated = await checkAuth()
+  if (!isAuthenticated) {
+    return
+  }
+  
+  // 자동 토큰 리프레시 시작
+  startAutoRefresh()
+  
+  // 데이터 로드
   loadData()
 })
 
@@ -291,23 +355,24 @@ const loadOrganizations = async () => {
   }
 }
 
-const viewUserDetails = (user) => {
+const viewUserDetails = (user: User) => {
   selectedUser.value = user
   showUserModal.value = true
 }
 
-const getOrganizationName = (orgId) => {
+const getOrganizationName = (orgId: string | null) => {
+  if (!orgId) return '알 수 없음'
   const org = organizations.value.find(o => o.id === orgId)
   return org ? org.name : '알 수 없음'
 }
 
-const getServerName = (serverId) => {
+const getServerName = (serverId: string) => {
   if (!selectedUser.value?.characters) return ''
   const character = selectedUser.value.characters.find(c => c.server_id === serverId)
   return character?.servers?.name || '알 수 없음'
 }
 
-const formatDate = (dateString) => {
+const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleDateString('ko-KR')
 }
 

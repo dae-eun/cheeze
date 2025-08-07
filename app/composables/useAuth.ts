@@ -39,7 +39,7 @@ export const useAuth = () => {
     isLoading.value = true
     
     try {
-      // 서버에서 인증 상태 확인
+      // 서버에서 인증 상태 확인 (서버에서 자동으로 리프레시 토큰 처리)
       const response = await $fetch('/api/auth/me', {
         method: 'GET'
       })
@@ -49,24 +49,13 @@ export const useAuth = () => {
         isAuthenticated.value = true
         return true
       } else {
-        // 리프레시 토큰으로 새로운 액세스 토큰 발급 시도
-        try {
-          const userData = await refreshToken()
-          user.value = userData
-          isAuthenticated.value = true
-          return true
-        } catch (error) {
-          console.error('Token refresh failed:', error)
-          handleAuthFailure('세션이 만료되었습니다. 다시 로그인해주세요.')
-          return false
-        }
+        // 서버에서 이미 리프레시 토큰 처리를 했으므로, 실패 시 로그인 페이지로 이동
+        console.error('Authentication failed:', response.message)
+        user.value = null
+        isAuthenticated.value = false
+        handleAuthFailure(response.message || '인증이 필요합니다.')
+        return false
       }
-
-      // 인증 실패
-      user.value = null
-      isAuthenticated.value = false
-      handleAuthFailure(response.message || '인증이 필요합니다.')
-      return false
     } catch (error: any) {
       console.error('Auth check failed:', error)
       user.value = null

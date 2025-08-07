@@ -1,26 +1,31 @@
 import { createClient } from '@supabase/supabase-js'
-import { getTokenFromCookie, verifyAccessToken } from '../../utils/auth'
+import { authenticateUser, refreshTokenAndGetUser } from '../../utils/auth'
 
 const config = useRuntimeConfig()
 const supabaseAdmin = createClient(config.public.supabaseUrl, config.supabaseServiceKey)
 
 export default defineEventHandler(async (event) => {
   try {
-    // 인증 확인
-    const token = getTokenFromCookie(event, 'access_token')
-    if (!token) {
+    // 인증 확인 (리프레시 토큰 자동 처리)
+    let userData = await authenticateUser(event)
+    
+    if (!userData) {
       throw createError({
         statusCode: 401,
         statusMessage: '인증이 필요합니다.'
       })
     }
 
-    const user = await verifyAccessToken(token)
-    if (!user) {
-      throw createError({
-        statusCode: 401,
-        statusMessage: '유효하지 않은 토큰입니다.'
-      })
+    // 리프레시 토큰으로 인증된 경우, 새로운 액세스 토큰 발급
+    if (!userData.email) {
+      try {
+        userData = await refreshTokenAndGetUser(event, supabaseAdmin)
+      } catch (refreshError) {
+        throw createError({
+          statusCode: 401,
+          statusMessage: '세션이 만료되었습니다. 다시 로그인해주세요.'
+        })
+      }
     }
 
     const todoId = getRouterParam(event, 'id')
@@ -36,7 +41,7 @@ export default defineEventHandler(async (event) => {
     }
 
     // 반복주기 검증
-    if (!repeat_cycle || !['daily', 'weekly', 'weekend'].includes(repeat_cycle)) {
+    if (!repeat_cycle || !['없음', '일간', '주간', '월간'].includes(repeat_cycle)) {
       throw createError({
         statusCode: 400,
         statusMessage: '올바른 반복주기를 선택해주세요.'
@@ -66,10 +71,10 @@ export default defineEventHandler(async (event) => {
     }
 
     // 사용자의 조직 정보 가져오기
-    const { data: userData, error: userError } = await supabaseAdmin
+    const { data: dbUser, error: userError } = await supabaseAdmin
       .from('users')
       .select('organization_id')
-      .eq('id', user.user_id)
+      .eq('id', userData.user_id)
       .single()
 
     if (userError) {
@@ -80,10 +85,10 @@ export default defineEventHandler(async (event) => {
       })
     }
 
-    // 권한 확인 (관리자 숙제이거나 같은 조직의 숙제이거나 본인이 만든 숙제)
+    // 권한 확인 (관리자 숙제가거나 같은 조직의 숙제가거나 본인이 만든 숙제)
     if (!existingTodo.is_admin_todo && 
-        existingTodo.organization_id !== userData.organization_id &&
-        existingTodo.created_by !== user.user_id) {
+        existingTodo.organization_id !== dbUser.organization_id &&
+        existingTodo.created_by !== userData.user_id) {
       throw createError({
         statusCode: 403,
         statusMessage: '숙제목록을 수정할 권한이 없습니다.'

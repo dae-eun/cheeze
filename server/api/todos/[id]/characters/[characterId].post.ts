@@ -26,17 +26,17 @@ export default defineEventHandler(async (event) => {
     const todoId = getRouterParam(event, 'id')
     const characterId = getRouterParam(event, 'characterId')
 
-    // 숙제이 존재하는지 확인
+    // 숙제가 존재하는지 확인
     const { data: todo, error: todoError } = await supabaseAdmin
       .from('todos')
-      .select('id')
+      .select('id, target_count')
       .eq('id', todoId)
       .single()
 
     if (todoError || !todo) {
       throw createError({
         statusCode: 404,
-        statusMessage: '숙제을 찾을 수 없습니다.'
+        statusMessage: '숙제를 찾을 수 없습니다.'
       })
     }
 
@@ -74,14 +74,16 @@ export default defineEventHandler(async (event) => {
       })
     }
 
-    // 숙제을 캐릭터에 할당
+    // 숙제를 캐릭터에 할당
     const { data: todoCharacter, error: assignError } = await supabaseAdmin
       .from('todo_characters')
       .insert({
         todo_id: todoId,
         character_id: characterId,
         is_completed: false,
-        completion_date: today
+        completion_date: today,
+        target_count: todo.target_count || 1,
+        current_count: 0
       })
       .select()
       .single()

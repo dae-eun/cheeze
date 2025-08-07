@@ -39,15 +39,29 @@ CREATE TABLE characters (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Tasks table
-CREATE TABLE tasks (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-    character_id UUID REFERENCES characters(id) ON DELETE CASCADE,
-    title VARCHAR(255) NOT NULL,
+-- Todos table (숙제 목록)
+CREATE TABLE todos (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    title TEXT NOT NULL,
     description TEXT,
-    due_date DATE,
-    completed BOOLEAN DEFAULT FALSE,
+    is_admin_todo BOOLEAN DEFAULT FALSE,
+    repeat_cycle TEXT NOT NULL CHECK (repeat_cycle IN ('daily', 'weekly', 'weekend')) DEFAULT 'daily',
+    progress_type TEXT NOT NULL CHECK (progress_type IN ('dungeon', 'quest', 'purchase', 'exchange', 'other')) DEFAULT 'other',
+    created_by UUID REFERENCES users(id) ON DELETE CASCADE,
+    organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Todo Characters table (캐릭터별 숙제 매핑 - 다대다 관계)
+CREATE TABLE todo_characters (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    todo_id UUID REFERENCES todos(id) ON DELETE CASCADE,
+    character_id UUID REFERENCES characters(id) ON DELETE CASCADE,
+    is_completed BOOLEAN DEFAULT FALSE,
+    completed_at TIMESTAMP WITH TIME ZONE,
+    completion_date DATE DEFAULT CURRENT_DATE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE(todo_id, character_id, completion_date)
 ); 

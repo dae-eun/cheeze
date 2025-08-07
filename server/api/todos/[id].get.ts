@@ -30,49 +30,52 @@ export default defineEventHandler(async (event) => {
 
     const todoId = getRouterParam(event, 'id')
 
-    // 숙제목록 존재 확인 및 권한 확인
-    const { data: existingTodo, error: fetchError } = await supabaseAdmin
+    // 사용자의 조직 정보 가져오기
+    const { data: dbUser, error: userError } = await supabaseAdmin
+      .from('users')
+      .select('organization_id')
+      .eq('id', userData.user_id)
+      .single()
+
+    if (userError) {
+      console.error('User fetch error:', userError)
+      throw createError({
+        statusCode: 500,
+        statusMessage: '사용자 정보를 가져올 수 없습니다.'
+      })
+    }
+
+    // todo 조회
+    const { data: todo, error: todoError } = await supabaseAdmin
       .from('todos')
       .select('*')
       .eq('id', todoId)
       .single()
 
-    if (fetchError || !existingTodo) {
+    if (todoError || !todo) {
       throw createError({
         statusCode: 404,
-        statusMessage: '숙제목록을 찾을 수 없습니다.'
+        statusMessage: '숙제를 찾을 수 없습니다.'
       })
     }
 
-    // 권한 확인 (본인이 만든 숙제만 삭제 가능)
-    if (existingTodo.created_by !== userData.user_id) {
+    // 권한 확인 (관리자 숙제이거나 같은 조직의 숙제이거나 본인이 만든 숙제)
+    if (!todo.is_admin_todo && 
+        todo.organization_id !== dbUser.organization_id &&
+        todo.created_by !== userData.user_id) {
       throw createError({
         statusCode: 403,
-        statusMessage: '숙제목록을 삭제할 권한이 없습니다.'
-      })
-    }
-
-    // 숙제목록 삭제
-    const { error: deleteError } = await supabaseAdmin
-      .from('todos')
-      .delete()
-      .eq('id', todoId)
-
-    if (deleteError) {
-      console.error('Todo delete error:', deleteError)
-      throw createError({
-        statusCode: 500,
-        statusMessage: '숙제목록 삭제에 실패했습니다.'
+        statusMessage: '이 숙제에 접근할 권한이 없습니다.'
       })
     }
 
     return {
       success: true,
-      message: '숙제목록이 삭제되었습니다.'
+      todo: todo
     }
 
   } catch (error) {
-    console.error('Delete todo error:', error)
+    console.error('Get todo error:', error)
     throw error
   }
-}) 
+})

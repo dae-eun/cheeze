@@ -1,10 +1,10 @@
 import { createClient } from '@supabase/supabase-js'
-import { authenticateUser } from '../../utils/auth'
+import { authenticateUser, refreshTokenAndGetUser } from '../../utils/auth'
 
 export default defineEventHandler(async (event) => {
   try {
-    // 쿠키에서 토큰 확인
-    const userData = authenticateUser(event)
+    // 쿠키에서 토큰 확인 (리프레시 토큰 자동 처리)
+    const userData = await authenticateUser(event)
     
     if (!userData) {
       return {
@@ -13,30 +13,39 @@ export default defineEventHandler(async (event) => {
       }
     }
 
-    // 사용자 정보 조회
-    const config = useRuntimeConfig()
-    const supabaseAdmin = createClient(config.public.supabaseUrl, config.supabaseServiceKey)
-    
-    const { data: user, error } = await supabaseAdmin
-      .from('users')
-      .select('id, email, name, organization_id')
-      .eq('id', userData.user_id)
-      .maybeSingle()
-
-    if (error || !user) {
-      return {
-        success: false,
-        message: '사용자를 찾을 수 없습니다.'
+    // 리프레시 토큰으로 인증된 경우 (userData.email이 빈 문자열), 사용자 정보 조회 필요
+    if (!userData.email) {
+      const config = useRuntimeConfig()
+      const supabaseAdmin = createClient(config.public.supabaseUrl, config.supabaseServiceKey)
+      
+      try {
+        const refreshedUser = await refreshTokenAndGetUser(event, supabaseAdmin)
+        
+        return {
+          success: true,
+          user: {
+            id: refreshedUser.user_id,
+            email: refreshedUser.email,
+            name: refreshedUser.name,
+            organization_id: refreshedUser.organization_id
+          }
+        }
+      } catch (refreshError) {
+        return {
+          success: false,
+          message: '세션이 만료되었습니다. 다시 로그인해주세요.'
+        }
       }
     }
 
+    // 액세스 토큰으로 인증된 경우, 사용자 정보 반환
     return {
       success: true,
       user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        organization_id: user.organization_id
+        id: userData.user_id,
+        email: userData.email,
+        name: userData.name,
+        organization_id: userData.organization_id
       }
     }
 

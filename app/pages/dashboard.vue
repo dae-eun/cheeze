@@ -112,7 +112,7 @@
             </svg>
           </div>
           <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">캐릭터가 없습니다</h3>
-          <p class="text-gray-600 dark:text-gray-400 mb-4">캐릭터를 추가하고 숙제을 관리해보세요.</p>
+          <p class="text-gray-600 dark:text-gray-400 mb-4">캐릭터를 추가하고 숙제를 관리해보세요.</p>
           <NuxtLink
             to="/profile"
             class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md transition-colors"
@@ -142,22 +142,61 @@
               </span>
             </div>
             
-            <div class="space-y-3">
-              <div class="flex justify-between text-sm">
-                <span class="text-gray-600 dark:text-gray-400">완료율</span>
-                <span class="font-medium text-gray-900 dark:text-white">{{ character.completionRate }}%</span>
-              </div>
-              <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
-                <div
-                  class="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                  :style="{ width: character.completionRate + '%' }"
-                ></div>
-              </div>
-              <div class="flex justify-between text-sm">
-                <span class="text-gray-600 dark:text-gray-400">{{ character.completed }}/{{ character.total }} 완료</span>
-                <span class="text-gray-600 dark:text-gray-400">{{ character.pending }} 남음</span>
-              </div>
-            </div>
+                         <div class="space-y-3">
+               <!-- 일간 숙제 -->
+               <div>
+                 <div class="flex justify-between text-sm mb-1">
+                   <span class="text-gray-600 dark:text-gray-400">일간</span>
+                   <span class="font-medium text-gray-900 dark:text-white">{{ character.dailyStats.completionRate }}%</span>
+                 </div>
+                 <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-1.5 mb-2">
+                   <div
+                     class="bg-blue-500 h-1.5 rounded-full transition-all duration-300"
+                     :style="{ width: character.dailyStats.completionRate + '%' }"
+                   ></div>
+                 </div>
+                 <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400">
+                   <span>{{ character.dailyStats.completed }}/{{ character.dailyStats.total }}</span>
+                   <span>{{ character.dailyStats.pending }} 남음</span>
+                 </div>
+               </div>
+
+               <!-- 주간 숙제 -->
+               <div>
+                 <div class="flex justify-between text-sm mb-1">
+                   <span class="text-gray-600 dark:text-gray-400">주간</span>
+                   <span class="font-medium text-gray-900 dark:text-white">{{ character.weeklyStats.completionRate }}%</span>
+                 </div>
+                 <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-1.5 mb-2">
+                   <div
+                     class="bg-green-500 h-1.5 rounded-full transition-all duration-300"
+                     :style="{ width: character.weeklyStats.completionRate + '%' }"
+                   ></div>
+                 </div>
+                 <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400">
+                   <span>{{ character.weeklyStats.completed }}/{{ character.weeklyStats.total }}</span>
+                   <span>{{ character.weeklyStats.pending }} 남음</span>
+                 </div>
+               </div>
+
+               <!-- 주말 숙제 -->
+               <div>
+                 <div class="flex justify-between text-sm mb-1">
+                   <span class="text-gray-600 dark:text-gray-400">주말</span>
+                   <span class="font-medium text-gray-900 dark:text-white">{{ character.weekendStats.completionRate }}%</span>
+                 </div>
+                 <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-1.5 mb-2">
+                   <div
+                     class="bg-purple-500 h-1.5 rounded-full transition-all duration-300"
+                     :style="{ width: character.weekendStats.completionRate + '%' }"
+                   ></div>
+                 </div>
+                 <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400">
+                   <span>{{ character.weekendStats.completed }}/{{ character.weekendStats.total }}</span>
+                   <span>{{ character.weekendStats.pending }} 남음</span>
+                 </div>
+               </div>
+             </div>
           </div>
         </div>
       </div>
@@ -175,7 +214,7 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
             </svg>
           </div>
-          <p class="text-gray-600 dark:text-gray-400">아직 완료된 숙제이 없습니다.</p>
+          <p class="text-gray-600 dark:text-gray-400">아직 완료된 숙제가 없습니다.</p>
         </div>
         <div v-else class="space-y-4">
           <div
@@ -293,6 +332,7 @@ interface Todo {
   title: string
   description: string
   progress_type: string
+  repeat_cycle: string
 }
 
 interface CharacterStats {
@@ -304,6 +344,24 @@ interface CharacterStats {
   completed: number
   pending: number
   completionRate: number
+  dailyStats: {
+    total: number
+    completed: number
+    pending: number
+    completionRate: number
+  }
+  weeklyStats: {
+    total: number
+    completed: number
+    pending: number
+    completionRate: number
+  }
+  weekendStats: {
+    total: number
+    completed: number
+    pending: number
+    completionRate: number
+  }
 }
 
 interface RecentActivity {
@@ -351,6 +409,28 @@ const characterStats = computed((): CharacterStats[] => {
     const pending = total - completed
     const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0
 
+    // 일간/주간/주말 통계 계산
+    const calculateCycleStats = (cycle: string) => {
+      const cycleTodos = todos.value.filter(todo => todo.repeat_cycle === cycle)
+      const cycleTodoIds = cycleTodos.map(todo => todo.id)
+      
+      const cycleCharacterTodos = characterTodos.filter(tc => 
+        cycleTodoIds.includes(tc.todo_id)
+      )
+      
+      const cycleTotal = cycleCharacterTodos.length
+      const cycleCompleted = cycleCharacterTodos.filter(tc => tc.is_completed).length
+      const cyclePending = cycleTotal - cycleCompleted
+      const cycleCompletionRate = cycleTotal > 0 ? Math.round((cycleCompleted / cycleTotal) * 100) : 0
+      
+      return {
+        total: cycleTotal,
+        completed: cycleCompleted,
+        pending: cyclePending,
+        completionRate: cycleCompletionRate
+      }
+    }
+
     return {
       id: character.id,
       name: character.name,
@@ -359,10 +439,60 @@ const characterStats = computed((): CharacterStats[] => {
       total,
       completed,
       pending,
-      completionRate
+      completionRate,
+      dailyStats: calculateCycleStats('daily'),
+      weeklyStats: calculateCycleStats('weekly'),
+      weekendStats: calculateCycleStats('weekend')
     }
   })
 })
+
+// 일간/주간/주말 숙제 통계 계산 함수
+const calculateStatsByCycle = (cycle: string) => {
+  const today = new Date().toISOString().split('T')[0]
+  
+  // 해당 주기의 숙제들 필터링
+  const cycleTodos = todos.value.filter(todo => todo.repeat_cycle === cycle)
+  const cycleTodoIds = cycleTodos.map(todo => todo.id)
+  
+  // 오늘 날짜의 해당 주기 숙제들
+  const todayCycleTodos = todoCharacters.value.filter(tc => 
+    cycleTodoIds.includes(tc.todo_id) && tc.completion_date === today
+  )
+  
+  const total = todayCycleTodos.length
+  const completed = todayCycleTodos.filter(tc => tc.is_completed).length
+  const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0
+  
+  // 진행 종류별 통계
+  const byType = { dungeon: 0, quest: 0, purchase: 0, other: 0 }
+  const byTypeTotal = { dungeon: 0, quest: 0, purchase: 0, other: 0 }
+  
+  todayCycleTodos.forEach(tc => {
+    const todo = cycleTodos.find(t => t.id === tc.todo_id)
+    if (todo) {
+      const type = todo.progress_type as keyof typeof byType
+      byTypeTotal[type]++
+      if (tc.is_completed) {
+        byType[type]++
+      }
+    }
+  })
+  
+  return {
+    total,
+    completed,
+    pending: total - completed,
+    completionRate,
+    byType,
+    byTypeTotal
+  }
+}
+
+// 일간/주간/주말 통계
+const dailyStats = computed(() => calculateStatsByCycle('daily'))
+const weeklyStats = computed(() => calculateStatsByCycle('weekly'))
+const weekendStats = computed(() => calculateStatsByCycle('weekend'))
 
 // 최근 활동
 const recentActivities = computed((): RecentActivity[] => {
@@ -399,7 +529,7 @@ const loadData = async () => {
 
     // 숙제 로드
     const todosData = await todosStore.fetchTodos()
-    todos.value = todosData
+    todos.value = todosData as any
 
     // 숙제-캐릭터 매핑 로드
     const todoCharactersPromises = characters.value.map(character =>

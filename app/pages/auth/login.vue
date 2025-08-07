@@ -112,6 +112,7 @@ const handleLogin = async () => {
 
     // 시스템 계정인지 확인하여 적절한 페이지로 이동
     if (response.user?.is_system) {
+      // 시스템 계정은 관리자 패널로 이동하되, 원하는 페이지로 직접 이동 가능
       await navigateTo('/admin')
     } else {
       await navigateTo('/dashboard')

@@ -1,10 +1,26 @@
 <template>
   <div class="space-y-8">
+    <!-- 페이지 고유 헤더 -->
+    <div class="bg-gradient-to-r from-red-600 to-red-700 rounded-lg p-6 text-white">
+      <div class="flex justify-between items-center">
+        <div>
+          <h1 class="text-3xl font-bold">시스템 숙제 관리 (TODOS 페이지)</h1>
+          <p class="mt-1 opacity-90">모든 조직에 적용되는 시스템 숙제를 관리합니다</p>
+        </div>
+        <div class="flex items-center space-x-2">
+          <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+          </svg>
+          <span class="text-lg font-semibold">Todo Management</span>
+        </div>
+      </div>
+    </div>
+
     <!-- 헤더 섹션 -->
     <div class="flex justify-between items-center">
       <div>
-        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">시스템 숙제 관리</h1>
-        <p class="text-gray-600 dark:text-gray-400 mt-1">모든 조직에 적용되는 시스템 숙제을 관리합니다</p>
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white">시스템 숙제 관리</h2>
+        <p class="text-gray-600 dark:text-gray-400 mt-1">모든 조직에 적용되는 시스템 숙제를 관리합니다</p>
       </div>
       <button
         @click="showCreateModal = true"
@@ -93,10 +109,11 @@
             class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:text-white"
           >
             <option value="">모든 진행 종류</option>
-            <option value="아르바이트">아르바이트</option>
-            <option value="던전">던전</option>
-            <option value="퀘스트">퀘스트</option>
-            <option value="기타">기타</option>
+            <option value="dungeon">던전</option>
+            <option value="quest">퀘스트</option>
+            <option value="purchase">구매</option>
+            <option value="exchange">교환</option>
+            <option value="other">기타</option>
           </select>
           <select
             v-model="filterRepeatCycle"
@@ -132,8 +149,8 @@
         <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
         </svg>
-        <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">숙제이 없습니다</h3>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">새 시스템 숙제을 생성해보세요.</p>
+        <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">숙제가 없습니다</h3>
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">새 시스템 숙제를 생성해보세요.</p>
       </div>
       
       <div v-else class="divide-y divide-gray-200 dark:divide-gray-700">
@@ -142,12 +159,12 @@
             <div class="flex-1">
               <div class="flex items-center space-x-3">
                 <h3 class="text-lg font-medium text-gray-900 dark:text-white">{{ todo.title }}</h3>
-                <span 
-                  class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
-                  :class="getProgressTypeClass(todo.progress_type)"
-                >
-                  {{ todo.progress_type }}
-                </span>
+                                 <span 
+                   class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                   :class="getProgressTypeClass(todo.progress_type)"
+                 >
+                   {{ getProgressTypeLabel(todo.progress_type) }}
+                 </span>
                 <span 
                   v-if="todo.repeat_cycle !== '없음'"
                   class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200"
@@ -181,7 +198,7 @@
     </div>
 
     <!-- 숙제 생성/수정 모달 -->
-    <div v-if="showCreateModal || showEditModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div v-if="showCreateModal || showEditModal" class="fixed inset-0 overflow-y-auto h-full w-full z-50" style="background-color: rgba(0, 0, 0, 0.5);">
       <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white dark:bg-gray-800">
         <div class="mt-3">
           <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">
@@ -215,11 +232,26 @@
                 class="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 focus:outline-none focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:text-white"
               >
                 <option value="">선택하세요</option>
-                <option value="아르바이트">아르바이트</option>
-                <option value="던전">던전</option>
-                <option value="퀘스트">퀘스트</option>
-                <option value="기타">기타</option>
+                <option value="dungeon">던전</option>
+                <option value="quest">퀘스트</option>
+                <option value="purchase">구매</option>
+                <option value="exchange">교환</option>
+                <option value="other">기타</option>
               </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">목표 반복 횟수</label>
+              <input
+                v-model.number="todoForm.target_count"
+                type="number"
+                min="1"
+                max="999"
+                class="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 focus:outline-none focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:text-white"
+                placeholder="1"
+              />
+              <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                목표 횟수에 도달하면 자동으로 완료됩니다. (1회 = 일반 체크박스)
+              </p>
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">반복 주기</label>
@@ -272,19 +304,52 @@
 </template>
 
 <script setup lang="ts">
+import { useAuth } from '~/composables/useAuth'
+
 definePageMeta({
-  layout: 'admin'
+  layout: 'admin',
+  title: '시스템 숙제 관리',
+  description: '모든 조직에 적용되는 시스템 숙제를 관리합니다'
+})
+
+// 페이지 고유 메타데이터 설정
+useHead({
+  title: '시스템 숙제 관리 - 관리자 패널',
+  meta: [
+    { name: 'description', content: '모든 조직에 적용되는 시스템 숙제를 관리합니다' },
+    { property: 'og:title', content: '시스템 숙제 관리' },
+    { property: 'og:description', content: '모든 조직에 적용되는 시스템 숙제를 관리합니다' }
+  ]
 })
 
 const supabase = useSupabase()
+const { checkAuth, startAutoRefresh } = useAuth()
 
-const todos = ref([])
-const organizations = ref([])
+interface Todo {
+  id: string
+  title: string
+  description?: string
+  progress_type: string
+  repeat_cycle: string
+  target_count?: number
+  organization_id?: string
+  created_at: string
+  is_admin_todo: boolean
+  completed?: boolean
+}
+
+interface Organization {
+  id: string
+  name: string
+}
+
+const todos = ref<Todo[]>([])
+const organizations = ref<Organization[]>([])
 const loading = ref(true)
 const saving = ref(false)
 const showCreateModal = ref(false)
 const showEditModal = ref(false)
-const editingTodoId = ref(null)
+const editingTodoId = ref<string | null>(null)
 
 const searchQuery = ref('')
 const filterProgressType = ref('')
@@ -295,10 +360,21 @@ const todoForm = ref({
   description: '',
   progress_type: '',
   repeat_cycle: '',
-  organization_id: ''
+  organization_id: '',
+  target_count: 1
 })
 
-onMounted(() => {
+onMounted(async () => {
+  // 인증 확인
+  const isAuthenticated = await checkAuth()
+  if (!isAuthenticated) {
+    return
+  }
+  
+  // 자동 토큰 리프레시 시작
+  startAutoRefresh()
+  
+  // 데이터 로드
   loadData()
 })
 
@@ -317,14 +393,14 @@ const loadData = async () => {
 
 const loadTodos = async () => {
   try {
-    const { data, error } = await supabase
-      .from('todos')
-      .select('*')
-      .eq('is_admin_todo', true)
-      .order('created_at', { ascending: false })
-
-    if (error) throw error
-    todos.value = data || []
+    const response = await $fetch('/api/todos')
+    
+    if (response.success) {
+      // 시스템 todo만 필터링
+      todos.value = (response as any).todos.filter((todo: Todo) => todo.is_admin_todo) || []
+    } else {
+      throw new Error('Failed to load todos')
+    }
   } catch (error) {
     console.error('Error loading todos:', error)
   }
@@ -332,13 +408,13 @@ const loadTodos = async () => {
 
 const loadOrganizations = async () => {
   try {
-    const { data, error } = await supabase
-      .from('organizations')
-      .select('id, name')
-      .order('name')
-
-    if (error) throw error
-    organizations.value = data || []
+    const response = await $fetch('/api/organizations')
+    
+    if (response.success) {
+      organizations.value = (response as any).organizations || []
+    } else {
+      throw new Error('Failed to load organizations')
+    }
   } catch (error) {
     console.error('Error loading organizations:', error)
   }
@@ -355,15 +431,16 @@ const createTodo = async () => {
         description: todoForm.value.description,
         progress_type: todoForm.value.progress_type,
         repeat_cycle: todoForm.value.repeat_cycle,
-        organization_id: todoForm.value.organization_id || null
+        organization_id: todoForm.value.organization_id || null,
+        target_count: todoForm.value.target_count
       }
     })
 
-    if (response.success && response.todo) {
-      todos.value.unshift(response.todo)
+    if (response.success && (response as any).todo) {
+      todos.value.unshift((response as any).todo)
       resetForm()
       closeModal()
-      alert('시스템 숙제이 생성되었습니다!')
+      alert('시스템 숙제가 생성되었습니다!')
     } else {
       throw new Error('Todo creation failed')
     }
@@ -375,14 +452,15 @@ const createTodo = async () => {
   }
 }
 
-const editTodo = (todo) => {
+const editTodo = (todo: Todo) => {
   editingTodoId.value = todo.id
   todoForm.value = {
     title: todo.title,
     description: todo.description || '',
     progress_type: todo.progress_type,
     repeat_cycle: todo.repeat_cycle,
-    organization_id: todo.organization_id || ''
+    organization_id: todo.organization_id || '',
+    target_count: todo.target_count || 1
   }
   showEditModal.value = true
 }
@@ -391,35 +469,31 @@ const updateTodo = async () => {
   saving.value = true
   
   try {
-    const { data, error } = await supabase
-      .from('todos')
-      .update({
+    const response = await $fetch(`/api/todos/${editingTodoId.value}`, {
+      method: 'PUT',
+      body: {
         title: todoForm.value.title,
         description: todoForm.value.description,
         progress_type: todoForm.value.progress_type,
         repeat_cycle: todoForm.value.repeat_cycle,
         organization_id: todoForm.value.organization_id || null
-      })
-      .eq('id', editingTodoId.value)
-      .select()
-      .maybeSingle()
+      }
+    })
 
-    if (error) throw error
+    if (response.success && (response as any).todo) {
+      // 목록에서 해당 숙제 업데이트
+      const index = todos.value.findIndex(todo => todo.id === editingTodoId.value)
+      if (index !== -1) {
+        todos.value[index] = (response as any).todo
+      }
 
-    if (!data) {
-      throw new Error('Todo update failed: no data returned')
+      resetForm()
+      closeModal()
+      
+      alert('시스템 숙제가 수정되었습니다!')
+    } else {
+      throw new Error('Todo update failed')
     }
-
-    // 목록에서 해당 숙제 업데이트
-    const index = todos.value.findIndex(todo => todo.id === editingTodoId.value)
-    if (index !== -1) {
-      todos.value[index] = data
-    }
-
-    resetForm()
-    closeModal()
-    
-    alert('시스템 숙제이 수정되었습니다!')
   } catch (error) {
     console.error('Error updating todo:', error)
     alert('시스템 숙제 수정 중 오류가 발생했습니다.')
@@ -428,23 +502,24 @@ const updateTodo = async () => {
   }
 }
 
-const deleteTodo = async (todoId) => {
-  if (!confirm('정말로 이 숙제을 삭제하시겠습니까?')) {
+const deleteTodo = async (todoId: string) => {
+  if (!confirm('정말로 이 숙제를 삭제하시겠습니까?')) {
     return
   }
   
   try {
-    const { error } = await supabase
-      .from('todos')
-      .delete()
-      .eq('id', todoId)
+    const response = await $fetch(`/api/todos/${todoId}`, {
+      method: 'DELETE'
+    })
 
-    if (error) throw error
-
-    // 목록에서 해당 숙제 제거
-    todos.value = todos.value.filter(todo => todo.id !== todoId)
-    
-    alert('시스템 숙제이 삭제되었습니다!')
+    if (response.success) {
+      // 목록에서 해당 숙제 제거
+      todos.value = todos.value.filter(todo => todo.id !== todoId)
+      
+      alert('시스템 숙제가 삭제되었습니다!')
+    } else {
+      throw new Error('Todo deletion failed')
+    }
   } catch (error) {
     console.error('Error deleting todo:', error)
     alert('시스템 숙제 삭제 중 오류가 발생했습니다.')
@@ -457,7 +532,8 @@ const resetForm = () => {
     description: '',
     progress_type: '',
     repeat_cycle: '',
-    organization_id: ''
+    organization_id: '',
+    target_count: 1
   }
   editingTodoId.value = null
 }
@@ -468,27 +544,46 @@ const closeModal = () => {
   resetForm()
 }
 
-const getProgressTypeClass = (progressType) => {
+const getProgressTypeClass = (progressType: string) => {
   switch (progressType) {
-    case '아르바이트':
-      return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
-    case '던전':
+    case 'dungeon':
       return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-    case '퀘스트':
+    case 'quest':
       return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-    case '기타':
+    case 'purchase':
+      return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+    case 'exchange':
+      return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'
+    case 'other':
       return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
     default:
       return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
   }
 }
 
-const getOrganizationName = (orgId) => {
+const getProgressTypeLabel = (progressType: string) => {
+  switch (progressType) {
+    case 'dungeon':
+      return '던전'
+    case 'quest':
+      return '퀘스트'
+    case 'purchase':
+      return '구매'
+    case 'exchange':
+      return '교환'
+    case 'other':
+      return '기타'
+    default:
+      return progressType
+  }
+}
+
+const getOrganizationName = (orgId: string) => {
   const org = organizations.value.find(o => o.id === orgId)
   return org ? org.name : '알 수 없음'
 }
 
-const formatDate = (dateString) => {
+const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleDateString('ko-KR')
 }
 
