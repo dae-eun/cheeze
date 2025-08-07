@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import { retrySupabaseRPC } from '../../server/utils/retry'
+import { retrySupabaseRPC } from '../../utils/retry'
 
 const config = useRuntimeConfig()
 const supabaseAdmin = createClient(config.public.supabaseUrl, config.supabaseServiceKey)
