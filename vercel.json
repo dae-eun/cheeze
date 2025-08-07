@@ -6,7 +6,7 @@
     }
   ],
   "functions": {
-    "server/api/cron/reset-todos.post.ts": {
+    "api/cron/reset-todos.post.js": {
       "maxDuration": 30
     }
   },
