@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import { retrySupabaseRPC } from '../../utils/retry'
+import { retrySupabaseRPC } from '../../server/utils/retry'
 
 const config = useRuntimeConfig()
 const supabaseAdmin = createClient(config.public.supabaseUrl, config.supabaseServiceKey)
@@ -89,4 +89,4 @@ export default defineEventHandler(async (event): Promise<CronResponse> => {
       error: error instanceof Error ? error.message : 'Unknown error'
     }
   }
-}) 
+})
