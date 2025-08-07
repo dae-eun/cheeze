@@ -1,0 +1,10 @@
+# 개발 관련 파일들
+scripts/
+*.log
+.env.local
+.env.development
+
+# 빌드 캐시
+.nuxt/
+.output/
+dist/
