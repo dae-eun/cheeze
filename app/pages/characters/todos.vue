@@ -42,6 +42,29 @@
 
       <!-- 숙제 목록 -->
       <div v-else-if="selectedCharacter && assignedTodos.length > 0" class="space-y-8">
+        <!-- 진행현황 -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg p-4 sm:p-6 shadow-sm">
+          <h3 class="text-base sm:text-lg font-medium text-gray-900 dark:text-white mb-3 sm:mb-4">진행 현황</h3>
+          <div class="flex items-center space-x-4">
+            <div class="flex-1">
+              <div class="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-1">
+                <span>전체 완료율</span>
+                <span>{{ completionRate }}%</span>
+              </div>
+              <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                <div
+                  class="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                  :style="{ width: completionRate + '%' }"
+                ></div>
+              </div>
+            </div>
+            <div class="text-right">
+              <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ completedCount }}/{{ assignedCount }}</div>
+              <div class="text-sm text-gray-600 dark:text-gray-400">완료된 숙제</div>
+            </div>
+          </div>
+        </div>
+
         <!-- 진행 중인 숙제 -->
         <div class="space-y-8">
           <!-- 일간 숙제 -->
@@ -375,32 +398,9 @@
                </div>
              </TransitionGroup>
            </div>
-         </div>
+                   </div>
 
-                   <!-- 완료율 표시 -->
-          <div class="bg-white dark:bg-gray-800 rounded-lg p-4 sm:p-6 shadow-sm">
-            <h3 class="text-base sm:text-lg font-medium text-gray-900 dark:text-white mb-3 sm:mb-4">진행 현황</h3>
-           <div class="flex items-center space-x-4">
-             <div class="flex-1">
-               <div class="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-1">
-                 <span>전체 완료율</span>
-                 <span>{{ completionRate }}%</span>
-               </div>
-               <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                 <div
-                   class="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                   :style="{ width: completionRate + '%' }"
-                 ></div>
-               </div>
-             </div>
-             <div class="text-right">
-               <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ completedCount }}/{{ assignedCount }}</div>
-               <div class="text-sm text-gray-600 dark:text-gray-400">완료된 숙제</div>
-             </div>
-           </div>
-         </div>
-
-                   <!-- 숙제 추가 버튼 -->
+          <!-- 숙제 추가 버튼 -->
           <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 sm:p-6">
            <div class="flex items-start">
              <div class="flex-shrink-0">
