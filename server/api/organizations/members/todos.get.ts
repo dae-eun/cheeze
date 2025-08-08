@@ -109,7 +109,6 @@ export default defineEventHandler(async (event) => {
       `)
       .eq('is_shared', true)
       .eq('completion_date', today)
-      .order('created_at', { ascending: false })
 
     if (todosError) {
       console.error('Shared todos fetch error:', todosError)
@@ -126,8 +125,43 @@ export default defineEventHandler(async (event) => {
         memberCharacters.some(char => char.id === tc.character_id)
       ) || []
 
-      const totalTodos = memberTodos.length
-      const completedTodos = memberTodos.filter(tc => tc.is_completed).length
+      // 진행중/완료 우선 정렬, 그 다음 progress_type, 마지막 title로 정렬
+      const sortedMemberTodos = memberTodos.sort((a, b) => {
+        const isCompletedA = a.is_completed
+        const isCompletedB = b.is_completed
+        const progressTypeA = a.todos?.progress_type || ''
+        const progressTypeB = b.todos?.progress_type || ''
+        const titleA = a.todos?.title || ''
+        const titleB = b.todos?.title || ''
+        
+        // 진행중이 완료보다 먼저 (false가 true보다 먼저)
+        if (isCompletedA !== isCompletedB) {
+          return isCompletedA ? 1 : -1
+        }
+        
+        // progress_type 순서 정의 (던전 -> 퀘스트 -> 구매 -> 교환 -> 기타)
+        const progressTypeOrder = {
+          'dungeon': 1,
+          'quest': 2,
+          'purchase': 3,
+          'exchange': 4,
+          'other': 5
+        }
+        
+        const orderA = progressTypeOrder[progressTypeA as keyof typeof progressTypeOrder] || 6
+        const orderB = progressTypeOrder[progressTypeB as keyof typeof progressTypeOrder] || 6
+        
+        // progress_type이 다르면 progress_type으로 정렬
+        if (orderA !== orderB) {
+          return orderA - orderB
+        }
+        
+        // progress_type이 같으면 title로 정렬
+        return titleA.localeCompare(titleB, 'ko')
+      })
+
+      const totalTodos = sortedMemberTodos.length
+      const completedTodos = sortedMemberTodos.filter(tc => tc.is_completed).length
 
       return {
         user: {
@@ -139,7 +173,7 @@ export default defineEventHandler(async (event) => {
         totalTodos,
         completedTodos,
         completionRate: totalTodos > 0 ? Math.round((completedTodos / totalTodos) * 100) : 0,
-        todos: memberTodos
+        todos: sortedMemberTodos
       }
     }) || []
 
