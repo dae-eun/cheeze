@@ -391,9 +391,21 @@
                    </p>
                  </div>
 
-                 <!-- 완료 시간 -->
-                 <div class="text-xs text-green-600 dark:text-green-400 text-right sm:text-left">
-                   {{ getCompletedTime(todo.id) }}
+                 <!-- 완료 시간과 되돌리기 버튼 -->
+                 <div class="flex flex-col sm:flex-row items-end sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
+                   <div class="text-xs text-green-600 dark:text-green-400 text-right sm:text-left">
+                     {{ getCompletedTime(todo.id) }}
+                   </div>
+                   <button
+                     @click="undoCompletedTodo(todo.id)"
+                     class="flex items-center space-x-1 px-2 py-1 bg-orange-100 hover:bg-orange-200 dark:bg-orange-900/20 dark:hover:bg-orange-900/40 text-orange-700 dark:text-orange-300 rounded-md text-xs font-medium transition-colors"
+                     title="완료 취소"
+                   >
+                     <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                     </svg>
+                     <span>되돌리기</span>
+                   </button>
                  </div>
                </div>
              </TransitionGroup>
@@ -1415,6 +1427,34 @@ const loadSourceCharacterTodos = async () => {
 watch(selectedSourceCharacter, () => {
   loadSourceCharacterTodos()
 })
+
+// 완료된 숙제 되돌리기
+const undoCompletedTodo = async (todoId: string) => {
+  if (!selectedCharacter.value) return
+
+  if (!confirm('정말로 이 숙제의 완료 상태를 되돌리시겠습니까?')) {
+    return
+  }
+
+  try {
+    const response = await $fetch(`/api/todos/${todoId}/characters/${selectedCharacter.value.id}`, {
+      method: 'PUT',
+      body: {
+        is_completed: false
+      }
+    })
+
+    if (response.success) {
+      await loadTodoCharacters()
+      console.log('숙제 완료 상태가 되돌려졌습니다.')
+    } else {
+      alert('숙제 되돌리기에 실패했습니다.')
+    }
+  } catch (error) {
+    console.error('Error undoing completed todo:', error)
+    alert('숙제 되돌리기 중 오류가 발생했습니다.')
+  }
+}
 
 // 숙제 복사 실행
 const copyTodos = async () => {
