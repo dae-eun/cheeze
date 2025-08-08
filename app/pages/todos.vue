@@ -191,7 +191,7 @@
                   <option value="">반복 주기를 선택하세요</option>
                   <option value="daily">일간</option>
                   <option value="weekly">주간</option>
-                  <option value="weekend">월간</option>
+                  <option value="weekend">주말</option>
                 </select>
               </div>
 
@@ -579,7 +579,7 @@ const getRepeatCycleText = (cycle: string) => {
   const cycleMap: Record<string, string> = {
     'daily': '일간',
     'weekly': '주간',
-    'weekend': '월간'
+    'weekend': '주말'
   }
   return cycleMap[cycle] || cycle
 }
@@ -589,7 +589,7 @@ const getRepeatCycleClass = (todo: Todo) => {
   return {
     'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200': todo.repeat_cycle === 'daily',
     'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200': todo.repeat_cycle === 'weekly',
-    'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200': todo.repeat_cycle === 'weekend'
+    'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200': todo.repeat_cycle === 'weekend'
   }
 }
 

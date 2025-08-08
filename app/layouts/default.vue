@@ -1,11 +1,19 @@
 <template>
   <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <!-- 모바일 오버레이 -->
+    <div 
+      v-if="sidebarOpen && isMobile"
+      class="fixed inset-0 bg-black bg-opacity-50 z-40"
+      @click="closeSidebar"
+    ></div>
+    
     <!-- 사이드바 -->
     <div 
       class="fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-gray-800 shadow-lg transform transition-transform duration-300 ease-in-out"
       :class="{
         '-translate-x-full': !sidebarOpen && !sidebarPinned,
-        'translate-x-0': sidebarOpen || sidebarPinned
+        'translate-x-0': sidebarOpen || sidebarPinned,
+        'md:w-64 w-80': true
       }"
     >
       <!-- 사이드바 헤더 -->
@@ -19,7 +27,7 @@
           </span>
         </div>
         <button
-          v-if="sidebarOpen || sidebarPinned"
+          v-if="(sidebarOpen || sidebarPinned) && !isMobile"
           @click="togglePin"
           class="p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
           :class="sidebarPinned ? 'text-blue-600' : 'text-gray-400'"
@@ -97,8 +105,8 @@
     <div 
       class="transition-all duration-300 ease-in-out"
       :class="{
-        'ml-64': sidebarPinned,
-        'ml-0': !sidebarPinned
+        'md:ml-64 ml-0': sidebarPinned && !isMobile,
+        'ml-0': !sidebarPinned || isMobile
       }"
     >
       <!-- 헤더 -->
@@ -199,16 +207,17 @@ const { logout } = useAuth()
 const userStore = useUserStore()
 const charactersStore = useCharactersStore()
 
-// 대표캐릭터 정보
-const mainCharacter = ref<{ name: string } | null>(null)
-
 // 사이드바 상태
 const sidebarOpen = ref(false)
 const sidebarPinned = ref(false)
-const userMenuOpen = ref(false)
+const isMobile = ref(false)
 
-// 다크모드 상태
-const isDarkMode = ref(false)
+// 모바일 여부 확인
+const checkMobile = () => {
+  if (process.client) {
+    isMobile.value = window.innerWidth < 768
+  }
+}
 
 // 사이드바 상태 초기화
 const initializeSidebarState = () => {
@@ -216,9 +225,14 @@ const initializeSidebarState = () => {
     const savedSidebarPinned = localStorage.getItem('sidebarPinned')
     const savedSidebarOpen = localStorage.getItem('sidebarOpen')
     
-    // 저장된 설정이 있으면 사용, 없으면 기본값 (닫힘)
-    sidebarPinned.value = savedSidebarPinned !== null ? savedSidebarPinned === 'true' : false
-    sidebarOpen.value = savedSidebarOpen !== null ? savedSidebarOpen === 'true' : false
+    // 모바일에서는 기본적으로 사이드바를 고정하지 않음
+    if (isMobile.value) {
+      sidebarPinned.value = false
+      sidebarOpen.value = savedSidebarOpen === 'true'
+    } else {
+      sidebarPinned.value = savedSidebarPinned !== null ? savedSidebarPinned === 'true' : false
+      sidebarOpen.value = savedSidebarOpen !== null ? savedSidebarOpen === 'true' : false
+    }
   }
 }
 
@@ -229,6 +243,68 @@ const saveSidebarState = () => {
     localStorage.setItem('sidebarOpen', sidebarOpen.value.toString())
   }
 }
+
+// 사이드바 토글
+const toggleSidebar = () => {
+  if (isMobile.value) {
+    // 모바일에서는 오버레이 모드로만 동작
+    sidebarOpen.value = !sidebarOpen.value
+    sidebarPinned.value = false
+    
+    // 모바일에서 사이드바가 열릴 때 스크롤 방지
+    if (process.client) {
+      if (sidebarOpen.value) {
+        document.body.style.overflow = 'hidden'
+      } else {
+        document.body.style.overflow = ''
+      }
+    }
+  } else {
+    // 데스크톱에서는 기존 로직 유지
+    if (sidebarOpen.value || sidebarPinned.value) {
+      sidebarOpen.value = false
+      sidebarPinned.value = false
+    } else {
+      sidebarOpen.value = false
+      sidebarPinned.value = true
+    }
+  }
+  saveSidebarState()
+}
+
+// 사이드바 닫기
+const closeSidebar = () => {
+  sidebarOpen.value = false
+  
+  // 모바일에서 사이드바가 닫힐 때 스크롤 복원
+  if (process.client && isMobile.value) {
+    document.body.style.overflow = ''
+  }
+  
+  saveSidebarState()
+}
+
+// 사이드바 핀 고정/해제 (데스크톱에서만)
+const togglePin = () => {
+  if (!isMobile.value) {
+    sidebarPinned.value = !sidebarPinned.value
+    if (sidebarPinned.value) {
+      sidebarOpen.value = false
+    }
+    saveSidebarState()
+  }
+}
+
+// 대표캐릭터 정보
+const mainCharacter = ref<{ name: string } | null>(null)
+
+// 사용자 메뉴 상태
+const userMenuOpen = ref(false)
+
+// 다크모드 상태
+const isDarkMode = ref(false)
+
+
 
 // 다크모드 초기화
 const initializeDarkMode = () => {
@@ -262,34 +338,7 @@ const toggleDarkMode = () => {
   applyDarkMode()
 }
 
-// 사이드바 토글
-const toggleSidebar = () => {
-  if (sidebarOpen.value || sidebarPinned.value) {
-    // 사이드바가 열려있거나 고정되어 있으면 닫기
-    sidebarOpen.value = false
-    sidebarPinned.value = false
-  } else {
-    // 사이드바가 닫혀있으면 열고 고정
-    sidebarOpen.value = false
-    sidebarPinned.value = true
-  }
-  saveSidebarState()
-}
 
-// 사이드바 닫기
-const closeSidebar = () => {
-  sidebarOpen.value = false
-  saveSidebarState()
-}
-
-// 사이드바 핀 고정/해제
-const togglePin = () => {
-  sidebarPinned.value = !sidebarPinned.value
-  if (sidebarPinned.value) {
-    sidebarOpen.value = false
-  }
-  saveSidebarState()
-}
 
 // 사용자 메뉴 토글
 const toggleUserMenu = () => {
@@ -359,7 +408,16 @@ const getBreadcrumbText = () => {
 // 컴포넌트 마운트 시 다크모드 초기화 및 대표캐릭터 로드
 onMounted(async () => {
   initializeDarkMode()
+  checkMobile()
   initializeSidebarState()
+  
+  // 윈도우 리사이즈 이벤트 리스너 추가
+  if (process.client) {
+    window.addEventListener('resize', () => {
+      checkMobile()
+      initializeSidebarState()
+    })
+  }
   
   // 스토어에서 사용자 정보 가져오기
   try {
@@ -387,8 +445,5 @@ watch(() => userStore.user, async (newUser) => {
   }
 }, { immediate: false })
 
-// 사이드바 상태 변화 감지하여 자동 저장
-watch([sidebarOpen, sidebarPinned], () => {
-  saveSidebarState()
-}, { deep: true })
+
 </script> 

@@ -59,7 +59,7 @@ export default defineEventHandler(async (event) => {
         updated_at
       `)
       .eq('character_id', characterId)
-      .eq('completion_date', today)
+      // .eq('completion_date', today)  // 이 필터 제거 - 모든 할당된 todo 가져오기
 
     if (todoCharactersError) {
       console.error('Todo characters fetch error:', todoCharactersError)

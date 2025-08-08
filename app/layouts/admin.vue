@@ -1,11 +1,19 @@
 <template>
   <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <!-- 모바일 오버레이 -->
+    <div 
+      v-if="sidebarOpen && isMobile"
+      class="fixed inset-0 bg-black bg-opacity-50 z-40"
+      @click="closeSidebar"
+    ></div>
+    
     <!-- 관리자 사이드바 -->
     <div 
       class="fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-gray-800 shadow-lg transform transition-transform duration-300 ease-in-out"
       :class="{
         '-translate-x-full': !sidebarOpen && !sidebarPinned,
-        'translate-x-0': sidebarOpen || sidebarPinned
+        'translate-x-0': sidebarOpen || sidebarPinned,
+        'md:w-64 w-80': true
       }"
     >
       <!-- 사이드바 헤더 -->
@@ -19,7 +27,7 @@
           </span>
         </div>
         <button
-          v-if="sidebarOpen || sidebarPinned"
+          v-if="(sidebarOpen || sidebarPinned) && !isMobile"
           @click="togglePin"
           class="p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
           :class="sidebarPinned ? 'text-red-600' : 'text-gray-400'"
@@ -97,8 +105,8 @@
     <div 
       class="transition-all duration-300 ease-in-out"
       :class="{
-        'ml-64': sidebarPinned,
-        'ml-0': !sidebarPinned
+        'md:ml-64 ml-0': sidebarPinned && !isMobile,
+        'ml-0': !sidebarPinned || isMobile
       }"
     >
       <!-- 헤더 -->
@@ -199,7 +207,40 @@ const userStore = useUserStore()
 // 사이드바 상태
 const sidebarOpen = ref(false)
 const sidebarPinned = ref(true) // 관리자는 기본적으로 사이드바 고정
+const isMobile = ref(false)
 const userMenuOpen = ref(false)
+
+// 모바일 여부 확인
+const checkMobile = () => {
+  if (process.client) {
+    isMobile.value = window.innerWidth < 768
+  }
+}
+
+// 사이드바 상태 초기화
+const initializeSidebarState = () => {
+  if (process.client) {
+    const savedSidebarPinned = localStorage.getItem('sidebarPinned')
+    const savedSidebarOpen = localStorage.getItem('sidebarOpen')
+    
+    // 모바일에서는 기본적으로 사이드바를 고정하지 않음
+    if (isMobile.value) {
+      sidebarPinned.value = false
+      sidebarOpen.value = savedSidebarOpen === 'true'
+    } else {
+      sidebarPinned.value = savedSidebarPinned !== null ? savedSidebarPinned === 'true' : true
+      sidebarOpen.value = savedSidebarOpen !== null ? savedSidebarOpen === 'true' : false
+    }
+  }
+}
+
+// 사이드바 상태 저장
+const saveSidebarState = () => {
+  if (process.client) {
+    localStorage.setItem('sidebarPinned', sidebarPinned.value.toString())
+    localStorage.setItem('sidebarOpen', sidebarOpen.value.toString())
+  }
+}
 
 // 다크모드 상태
 const isDarkMode = ref(false)
@@ -237,20 +278,52 @@ const toggleDarkMode = () => {
 
 // 사이드바 토글
 const toggleSidebar = () => {
-  if (sidebarOpen.value || sidebarPinned.value) {
-    sidebarOpen.value = false
+  if (isMobile.value) {
+    // 모바일에서는 오버레이 모드로만 동작
+    sidebarOpen.value = !sidebarOpen.value
     sidebarPinned.value = false
+    
+    // 모바일에서 사이드바가 열릴 때 스크롤 방지
+    if (process.client) {
+      if (sidebarOpen.value) {
+        document.body.style.overflow = 'hidden'
+      } else {
+        document.body.style.overflow = ''
+      }
+    }
   } else {
-    sidebarOpen.value = false
-    sidebarPinned.value = true
+    // 데스크톱에서는 기존 로직 유지
+    if (sidebarOpen.value || sidebarPinned.value) {
+      sidebarOpen.value = false
+      sidebarPinned.value = false
+    } else {
+      sidebarOpen.value = false
+      sidebarPinned.value = true
+    }
   }
+  saveSidebarState()
 }
 
-// 사이드바 핀 고정/해제
+// 사이드바 닫기
+const closeSidebar = () => {
+  sidebarOpen.value = false
+  
+  // 모바일에서 사이드바가 닫힐 때 스크롤 복원
+  if (process.client && isMobile.value) {
+    document.body.style.overflow = ''
+  }
+  
+  saveSidebarState()
+}
+
+// 사이드바 핀 고정/해제 (데스크톱에서만)
 const togglePin = () => {
-  sidebarPinned.value = !sidebarPinned.value
-  if (sidebarPinned.value) {
-    sidebarOpen.value = false
+  if (!isMobile.value) {
+    sidebarPinned.value = !sidebarPinned.value
+    if (sidebarPinned.value) {
+      sidebarOpen.value = false
+    }
+    saveSidebarState()
   }
 }
 
@@ -294,5 +367,15 @@ const getBreadcrumbText = () => {
 // 컴포넌트 마운트 시 다크모드 초기화
 onMounted(() => {
   initializeDarkMode()
+  checkMobile()
+  initializeSidebarState()
+  
+  // 윈도우 리사이즈 이벤트 리스너 추가
+  if (process.client) {
+    window.addEventListener('resize', () => {
+      checkMobile()
+      initializeSidebarState()
+    })
+  }
 })
 </script> 
