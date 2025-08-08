@@ -89,7 +89,7 @@
                   <!-- 숙제 정보 -->
                   <div class="flex-1">
                     <div class="flex flex-wrap items-center gap-2">
-                      <span class="font-medium text-gray-900 dark:text-white text-sm sm:text-base">{{ todo.title }}</span>
+                      <span class="font-medium text-gray-900 dark:text-white">{{ todo.title }}</span>
                       <span class="bg-purple-100 dark:bg-purple-900/20 text-purple-800 dark:text-purple-300 px-2 py-1 rounded-full text-xs">
                         {{ getProgressTypeLabel(todo.progress_type) }}
                       </span>
@@ -853,9 +853,39 @@ const assignedTodos = computed(() => {
   return todos.value.filter(todo => assignedTodoIds.includes(todo.id))
 })
 
-const assignedDailyTodos = computed(() => assignedTodos.value.filter(todo => todo.repeat_cycle === 'daily'))
-const assignedWeeklyTodos = computed(() => assignedTodos.value.filter(todo => todo.repeat_cycle === 'weekly'))
-const assignedMonthlyTodos = computed(() => assignedTodos.value.filter(todo => todo.repeat_cycle === 'weekend'))
+// 정렬 함수
+const sortTodos = (todos: any[]) => {
+  return todos.sort((a, b) => {
+    const progressTypeA = a.progress_type || ''
+    const progressTypeB = b.progress_type || ''
+    const titleA = a.title || ''
+    const titleB = b.title || ''
+    
+    // progress_type 순서 정의 (던전 -> 퀘스트 -> 구매 -> 교환 -> 기타)
+    const progressTypeOrder = {
+      'dungeon': 1,
+      'quest': 2,
+      'purchase': 3,
+      'exchange': 4,
+      'other': 5
+    }
+    
+    const orderA = progressTypeOrder[progressTypeA as keyof typeof progressTypeOrder] || 6
+    const orderB = progressTypeOrder[progressTypeB as keyof typeof progressTypeOrder] || 6
+    
+    // progress_type이 다르면 progress_type으로 정렬
+    if (orderA !== orderB) {
+      return orderA - orderB
+    }
+    
+    // progress_type이 같으면 title로 정렬
+    return titleA.localeCompare(titleB, 'ko')
+  })
+}
+
+const assignedDailyTodos = computed(() => sortTodos(assignedTodos.value.filter(todo => todo.repeat_cycle === 'daily')))
+const assignedWeeklyTodos = computed(() => sortTodos(assignedTodos.value.filter(todo => todo.repeat_cycle === 'weekly')))
+const assignedMonthlyTodos = computed(() => sortTodos(assignedTodos.value.filter(todo => todo.repeat_cycle === 'weekend')))
 
 // 완료된 숙제 목록
 const completedTodos = computed(() => {
