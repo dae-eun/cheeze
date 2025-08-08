@@ -44,7 +44,7 @@
             <!-- 숙제 현황 -->
             <div class="space-y-3">
               <div class="flex justify-between items-center">
-                <span class="text-sm text-gray-600 dark:text-gray-400">총 숙제</span>
+                <span class="text-sm text-gray-600 dark:text-gray-400">공유한 총 숙제</span>
                 <span class="text-lg font-semibold text-gray-900 dark:text-white">
                   {{ member.totalTodos }}
                 </span>
