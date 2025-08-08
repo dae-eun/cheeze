@@ -1,28 +1,28 @@
 <template>
   <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
-    <div class="max-w-6xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-6xl mx-auto py-4 sm:py-8 px-3 sm:px-4 lg:px-8">
       <!-- 캐릭터 선택 버튼들 (최상단) -->
-      <div class="mb-8">
-        <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">캐릭터 선택</h2>
-        <div class="flex flex-wrap gap-3">
+      <div class="mb-6 sm:mb-8">
+        <h2 class="text-base sm:text-lg font-medium text-gray-900 dark:text-white mb-3 sm:mb-4">캐릭터 선택</h2>
+        <div class="flex flex-wrap gap-2 sm:gap-3">
           <button
             v-for="character in characters"
             :key="character.id"
             @click="selectCharacter(character)"
             :class="[
-              'px-4 py-2 rounded-lg font-medium transition-colors',
+              'px-3 sm:px-4 py-2 rounded-lg font-medium transition-colors text-sm sm:text-base',
               selectedCharacter?.id === character.id
                 ? 'bg-blue-600 text-white shadow-lg'
                 : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-600'
             ]"
           >
-            <div class="flex items-center space-x-2">
-              <span class="text-sm">{{ character.name }}</span>
-              <span v-if="character.is_main" class="bg-yellow-500 text-yellow-900 px-1.5 py-0.5 rounded-full text-xs font-bold">
+            <div class="flex items-center space-x-1 sm:space-x-2">
+              <span class="text-xs sm:text-sm">{{ character.name }}</span>
+              <span v-if="character.is_main" class="bg-yellow-500 text-yellow-900 px-1 py-0.5 rounded-full text-xs font-bold">
                 메인
               </span>
             </div>
-            <div class="text-xs opacity-75">{{ character.servers?.name }}</div>
+            <div class="text-xs opacity-75 hidden sm:block">{{ character.servers?.name }}</div>
           </button>
         </div>
       </div>
@@ -42,332 +42,397 @@
 
       <!-- 숙제 목록 -->
       <div v-else-if="selectedCharacter && assignedTodos.length > 0" class="space-y-8">
-        <!-- 일간 숙제 -->
-        <div v-if="assignedDailyTodos.length > 0" class="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm">
-          <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center">
-            <span class="bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300 px-2 py-1 rounded-full text-xs mr-2">
-              일간
-            </span>
-            일간 숙제
-          </h3>
-          <div class="space-y-3">
-            <div
-              v-for="todo in assignedDailyTodos"
-              :key="todo.id"
-              class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-            >
-              <!-- 숙제 정보 -->
-              <div class="flex-1">
-                <div class="flex items-center space-x-2">
-                  <span class="font-medium text-gray-900 dark:text-white">{{ todo.title }}</span>
-                  <span class="bg-purple-100 dark:bg-purple-900/20 text-purple-800 dark:text-purple-300 px-2 py-1 rounded-full text-xs">
-                    {{ getProgressTypeLabel(todo.progress_type) }}
-                  </span>
-                </div>
-                <p v-if="todo.description" class="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                  {{ todo.description }}
-                </p>
-              </div>
-
-              <!-- 오른쪽 액션 영역 -->
-              <div class="flex items-center space-x-3">
-                <!-- 진행도 표시 (반복횟수가 있는 경우) -->
-                <div v-if="getTodoTargetCount(todo.id) > 1" class="flex flex-col items-center space-y-1">
-                  <!-- 반복횟수 표시 -->
-                  <div class="text-center">
-                    <div class="text-lg font-bold text-blue-600 dark:text-blue-400">
-                      {{ getTodoCurrentCount(todo.id) }}/{{ getTodoTargetCount(todo.id) }}
-                    </div>
-                    <div class="text-xs text-gray-500 dark:text-gray-400">진행도</div>
-                  </div>
-                  <!-- 진행률 바 -->
-                  <div class="w-12 h-1 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                    <div 
-                      class="h-full bg-blue-500 transition-all duration-300"
-                      :style="{ width: Math.min((getTodoCurrentCount(todo.id) / getTodoTargetCount(todo.id)) * 100, 100) + '%' }"
-                    ></div>
-                  </div>
-                </div>
-
-                <!-- 체크박스 (반복횟수가 없는 경우) -->
-                <input
-                  v-else
-                  type="checkbox"
-                  :checked="isTodoCompleted(todo.id)"
-                  @change="toggleTodo(todo.id, !isTodoCompleted(todo.id))"
-                  class="w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                />
-
-                <!-- 반복횟수 증가 버튼 또는 완료 체크 -->
-                <div v-if="getTodoTargetCount(todo.id) > 1" class="flex items-center justify-center w-10 h-10">
-                  <button
-                    v-if="!isTodoCompleted(todo.id)"
-                    @click="incrementTodoCount(todo.id)"
-                    class="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center space-x-1"
-                    title="반복횟수 증가"
-                  >
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                    </svg>
-                  </button>
-                  <div v-else class="text-green-500">
-                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                      <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-                    </svg>
-                  </div>
-                </div>
-
-                <!-- 삭제 버튼 -->
-                <button
-                  @click="removeTodo(todo.id)"
-                  class="text-red-500 hover:text-red-700 transition-colors"
-                  title="숙제 제거"
-                >
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 주간 숙제 -->
-        <div v-if="assignedWeeklyTodos.length > 0" class="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm">
-          <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center">
-            <span class="bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300 px-2 py-1 rounded-full text-xs mr-2">
-              주간
-            </span>
-            주간 숙제
-          </h3>
-          <div class="space-y-3">
-            <div
-              v-for="todo in assignedWeeklyTodos"
-              :key="todo.id"
-              class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-            >
-              <!-- 숙제 정보 -->
-              <div class="flex-1">
-                <div class="flex items-center space-x-2">
-                  <span class="font-medium text-gray-900 dark:text-white">{{ todo.title }}</span>
-                  <span class="bg-purple-100 dark:bg-purple-900/20 text-purple-800 dark:text-purple-300 px-2 py-1 rounded-full text-xs">
-                    {{ getProgressTypeLabel(todo.progress_type) }}
-                  </span>
-                </div>
-                <p v-if="todo.description" class="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                  {{ todo.description }}
-                </p>
-              </div>
-
-              <!-- 오른쪽 액션 영역 -->
-              <div class="flex items-center space-x-3">
-                <!-- 진행도 표시 (반복횟수가 있는 경우) -->
-                <div v-if="getTodoTargetCount(todo.id) > 1" class="flex flex-col items-center space-y-1">
-                  <!-- 반복횟수 표시 -->
-                  <div class="text-center">
-                    <div class="text-lg font-bold text-blue-600 dark:text-blue-400">
-                      {{ getTodoCurrentCount(todo.id) }}/{{ getTodoTargetCount(todo.id) }}
-                    </div>
-                    <div class="text-xs text-gray-500 dark:text-gray-400">진행도</div>
-                  </div>
-                  <!-- 진행률 바 -->
-                  <div class="w-12 h-1 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                    <div 
-                      class="h-full bg-blue-500 transition-all duration-300"
-                      :style="{ width: Math.min((getTodoCurrentCount(todo.id) / getTodoTargetCount(todo.id)) * 100, 100) + '%' }"
-                    ></div>
-                  </div>
-                </div>
-
-                <!-- 체크박스 (반복횟수가 없는 경우) -->
-                <input
-                  v-else
-                  type="checkbox"
-                  :checked="isTodoCompleted(todo.id)"
-                  @change="toggleTodo(todo.id, !isTodoCompleted(todo.id))"
-                  class="w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                />
-
-                <!-- 반복횟수 증가 버튼 또는 완료 체크 -->
-                <div v-if="getTodoTargetCount(todo.id) > 1" class="flex items-center justify-center w-10 h-10">
-                  <button
-                    v-if="!isTodoCompleted(todo.id)"
-                    @click="incrementTodoCount(todo.id)"
-                    class="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center space-x-1"
-                    title="반복횟수 증가"
-                  >
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                    </svg>
-                  </button>
-                  <div v-else class="text-green-500">
-                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                      <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-                    </svg>
-                  </div>
-                </div>
-
-                <!-- 삭제 버튼 -->
-                <button
-                  @click="removeTodo(todo.id)"
-                  class="text-red-500 hover:text-red-700 transition-colors"
-                  title="숙제 제거"
-                >
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 주말 숙제 -->
-        <div v-if="assignedMonthlyTodos.length > 0" class="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm">
-          <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center">
-            <span class="bg-orange-100 dark:bg-orange-900/20 text-orange-800 dark:text-orange-300 px-2 py-1 rounded-full text-xs mr-2">
-              주말
-            </span>
-            주말 숙제
-          </h3>
-          <div class="space-y-3">
-            <div
-              v-for="todo in assignedMonthlyTodos"
-              :key="todo.id"
-              class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-            >
-              <!-- 숙제 정보 -->
-              <div class="flex-1">
-                <div class="flex items-center space-x-2">
-                  <span class="font-medium text-gray-900 dark:text-white">{{ todo.title }}</span>
-                  <span class="bg-purple-100 dark:bg-purple-900/20 text-purple-800 dark:text-purple-300 px-2 py-1 rounded-full text-xs">
-                    {{ getProgressTypeLabel(todo.progress_type) }}
-                  </span>
-                </div>
-                <p v-if="todo.description" class="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                  {{ todo.description }}
-                </p>
-              </div>
-
-              <!-- 오른쪽 액션 영역 -->
-              <div class="flex items-center space-x-3">
-                <!-- 진행도 표시 (반복횟수가 있는 경우) -->
-                <div v-if="getTodoTargetCount(todo.id) > 1" class="flex flex-col items-center space-y-1">
-                  <!-- 반복횟수 표시 -->
-                  <div class="text-center">
-                    <div class="text-lg font-bold text-blue-600 dark:text-blue-400">
-                      {{ getTodoCurrentCount(todo.id) }}/{{ getTodoTargetCount(todo.id) }}
-                    </div>
-                    <div class="text-xs text-gray-500 dark:text-gray-400">진행도</div>
-                  </div>
-                  <!-- 진행률 바 -->
-                  <div class="w-12 h-1 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                    <div 
-                      class="h-full bg-blue-500 transition-all duration-300"
-                      :style="{ width: Math.min((getTodoCurrentCount(todo.id) / getTodoTargetCount(todo.id)) * 100, 100) + '%' }"
-                    ></div>
-                  </div>
-                </div>
-
-                <!-- 체크박스 (반복횟수가 없는 경우) -->
-                <input
-                  v-else
-                  type="checkbox"
-                  :checked="isTodoCompleted(todo.id)"
-                  @change="toggleTodo(todo.id, !isTodoCompleted(todo.id))"
-                  class="w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                />
-
-                <!-- 반복횟수 증가 버튼 또는 완료 체크 -->
-                <div v-if="getTodoTargetCount(todo.id) > 1" class="flex items-center justify-center w-10 h-10">
-                  <button
-                    v-if="!isTodoCompleted(todo.id)"
-                    @click="incrementTodoCount(todo.id)"
-                    class="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center space-x-1"
-                    title="반복횟수 증가"
-                  >
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                    </svg>
-                  </button>
-                  <div v-else class="text-green-500">
-                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                      <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-                    </svg>
-                  </div>
-                </div>
-
-                <!-- 삭제 버튼 -->
-                <button
-                  @click="removeTodo(todo.id)"
-                  class="text-red-500 hover:text-red-700 transition-colors"
-                  title="숙제 제거"
-                >
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 완료율 표시 -->
-        <div class="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm">
-          <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">진행 현황</h3>
-          <div class="flex items-center space-x-4">
-            <div class="flex-1">
-              <div class="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-1">
-                <span>전체 완료율</span>
-                <span>{{ completionRate }}%</span>
-              </div>
-              <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+        <!-- 진행 중인 숙제 -->
+        <div class="space-y-8">
+          <!-- 일간 숙제 -->
+          <div v-if="assignedDailyTodos.filter(todo => !isTodoCompleted(todo.id)).length > 0" class="bg-white dark:bg-gray-800 rounded-lg p-4 sm:p-6 shadow-sm">
+            <h3 class="text-base sm:text-lg font-medium text-gray-900 dark:text-white mb-3 sm:mb-4 flex items-center">
+              <span class="bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300 px-2 py-1 rounded-full text-xs mr-2">
+                일간
+              </span>
+              일간 숙제
+            </h3>
+            <div class="space-y-3">
+              <TransitionGroup
+                name="slide-out"
+                tag="div"
+                class="space-y-3"
+              >
                 <div
-                  class="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                  :style="{ width: completionRate + '%' }"
-                ></div>
-              </div>
+                  v-for="todo in assignedDailyTodos.filter(todo => !isTodoCompleted(todo.id))"
+                  :key="todo.id"
+                  class="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-300"
+                >
+                  <!-- 숙제 정보 -->
+                  <div class="flex-1">
+                    <div class="flex flex-wrap items-center gap-2">
+                      <span class="font-medium text-gray-900 dark:text-white text-sm sm:text-base">{{ todo.title }}</span>
+                      <span class="bg-purple-100 dark:bg-purple-900/20 text-purple-800 dark:text-purple-300 px-2 py-1 rounded-full text-xs">
+                        {{ getProgressTypeLabel(todo.progress_type) }}
+                      </span>
+                    </div>
+                    <p v-if="todo.description" class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">
+                      {{ todo.description }}
+                    </p>
+                  </div>
+
+                  <!-- 오른쪽 액션 영역 -->
+                  <div class="flex items-center justify-end sm:justify-start space-x-2 sm:space-x-3">
+                    <!-- 진행도 표시 (반복횟수가 있는 경우) -->
+                    <div v-if="getTodoTargetCount(todo.id) > 1" class="flex flex-col items-center space-y-1">
+                      <!-- 반복횟수 표시 -->
+                      <div class="text-center">
+                        <div class="text-lg font-bold text-blue-600 dark:text-blue-400">
+                          {{ getTodoCurrentCount(todo.id) }}/{{ getTodoTargetCount(todo.id) }}
+                        </div>
+                        <div class="text-xs text-gray-500 dark:text-gray-400">진행도</div>
+                      </div>
+                      <!-- 진행률 바 -->
+                      <div class="w-12 h-1 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                        <div 
+                          class="h-full bg-blue-500 transition-all duration-300"
+                          :style="{ width: Math.min((getTodoCurrentCount(todo.id) / getTodoTargetCount(todo.id)) * 100, 100) + '%' }"
+                        ></div>
+                      </div>
+                    </div>
+
+                    <!-- 체크박스 (반복횟수가 없는 경우) -->
+                    <input
+                      v-else
+                      type="checkbox"
+                      :checked="isTodoCompleted(todo.id)"
+                      @change="toggleTodo(todo.id, !isTodoCompleted(todo.id))"
+                      class="w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                    />
+
+                    <!-- 반복횟수 증가 버튼 또는 완료 체크 -->
+                    <div v-if="getTodoTargetCount(todo.id) > 1" class="flex items-center justify-center w-10 h-10">
+                      <button
+                        v-if="!isTodoCompleted(todo.id)"
+                        @click="incrementTodoCount(todo.id)"
+                        class="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center space-x-1"
+                        title="반복횟수 증가"
+                      >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                      </button>
+                      <div v-else class="text-green-500">
+                        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                          <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                        </svg>
+                      </div>
+                    </div>
+
+                    <!-- 삭제 버튼 -->
+                    <button
+                      @click="removeTodo(todo.id)"
+                      class="text-red-500 hover:text-red-700 transition-colors"
+                      title="숙제 제거"
+                    >
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </TransitionGroup>
             </div>
-            <div class="text-right">
-              <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ completedCount }}/{{ assignedCount }}</div>
-              <div class="text-sm text-gray-600 dark:text-gray-400">완료된 숙제</div>
+          </div>
+
+          <!-- 주간 숙제 -->
+          <div v-if="assignedWeeklyTodos.filter(todo => !isTodoCompleted(todo.id)).length > 0" class="bg-white dark:bg-gray-800 rounded-lg p-4 sm:p-6 shadow-sm">
+            <h3 class="text-base sm:text-lg font-medium text-gray-900 dark:text-white mb-3 sm:mb-4 flex items-center">
+              <span class="bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300 px-2 py-1 rounded-full text-xs mr-2">
+                주간
+              </span>
+              주간 숙제
+            </h3>
+            <div class="space-y-3">
+              <TransitionGroup
+                name="slide-out"
+                tag="div"
+                class="space-y-3"
+              >
+                <div
+                  v-for="todo in assignedWeeklyTodos.filter(todo => !isTodoCompleted(todo.id))"
+                  :key="todo.id"
+                  class="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-300"
+                >
+                  <!-- 숙제 정보 -->
+                  <div class="flex-1">
+                    <div class="flex items-center space-x-2">
+                      <span class="font-medium text-gray-900 dark:text-white">{{ todo.title }}</span>
+                      <span class="bg-purple-100 dark:bg-purple-900/20 text-purple-800 dark:text-purple-300 px-2 py-1 rounded-full text-xs">
+                        {{ getProgressTypeLabel(todo.progress_type) }}
+                      </span>
+                    </div>
+                    <p v-if="todo.description" class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                      {{ todo.description }}
+                    </p>
+                  </div>
+
+                  <!-- 오른쪽 액션 영역 -->
+                  <div class="flex items-center space-x-3">
+                    <!-- 진행도 표시 (반복횟수가 있는 경우) -->
+                    <div v-if="getTodoTargetCount(todo.id) > 1" class="flex flex-col items-center space-y-1">
+                      <!-- 반복횟수 표시 -->
+                      <div class="text-center">
+                        <div class="text-lg font-bold text-blue-600 dark:text-blue-400">
+                          {{ getTodoCurrentCount(todo.id) }}/{{ getTodoTargetCount(todo.id) }}
+                        </div>
+                        <div class="text-xs text-gray-500 dark:text-gray-400">진행도</div>
+                      </div>
+                      <!-- 진행률 바 -->
+                      <div class="w-12 h-1 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                        <div 
+                          class="h-full bg-blue-500 transition-all duration-300"
+                          :style="{ width: Math.min((getTodoCurrentCount(todo.id) / getTodoTargetCount(todo.id)) * 100, 100) + '%' }"
+                        ></div>
+                      </div>
+                    </div>
+
+                    <!-- 체크박스 (반복횟수가 없는 경우) -->
+                    <input
+                      v-else
+                      type="checkbox"
+                      :checked="isTodoCompleted(todo.id)"
+                      @change="toggleTodo(todo.id, !isTodoCompleted(todo.id))"
+                      class="w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                    />
+
+                    <!-- 반복횟수 증가 버튼 또는 완료 체크 -->
+                    <div v-if="getTodoTargetCount(todo.id) > 1" class="flex items-center justify-center w-10 h-10">
+                      <button
+                        v-if="!isTodoCompleted(todo.id)"
+                        @click="incrementTodoCount(todo.id)"
+                        class="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center space-x-1"
+                        title="반복횟수 증가"
+                      >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                      </button>
+                      <div v-else class="text-green-500">
+                        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                          <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                        </svg>
+                      </div>
+                    </div>
+
+                    <!-- 삭제 버튼 -->
+                    <button
+                      @click="removeTodo(todo.id)"
+                      class="text-red-500 hover:text-red-700 transition-colors"
+                      title="숙제 제거"
+                    >
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </TransitionGroup>
+            </div>
+          </div>
+
+          <!-- 주말 숙제 -->
+          <div v-if="assignedMonthlyTodos.filter(todo => !isTodoCompleted(todo.id)).length > 0" class="bg-white dark:bg-gray-800 rounded-lg p-4 sm:p-6 shadow-sm">
+            <h3 class="text-base sm:text-lg font-medium text-gray-900 dark:text-white mb-3 sm:mb-4 flex items-center">
+              <span class="bg-orange-100 dark:bg-orange-900/20 text-orange-800 dark:text-orange-300 px-2 py-1 rounded-full text-xs mr-2">
+                주말
+              </span>
+              주말 숙제
+            </h3>
+            <div class="space-y-3">
+              <TransitionGroup
+                name="slide-out"
+                tag="div"
+                class="space-y-3"
+              >
+                <div
+                  v-for="todo in assignedMonthlyTodos.filter(todo => !isTodoCompleted(todo.id))"
+                  :key="todo.id"
+                  class="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-300"
+                >
+                  <!-- 숙제 정보 -->
+                  <div class="flex-1">
+                    <div class="flex items-center space-x-2">
+                      <span class="font-medium text-gray-900 dark:text-white">{{ todo.title }}</span>
+                      <span class="bg-purple-100 dark:bg-purple-900/20 text-purple-800 dark:text-purple-300 px-2 py-1 rounded-full text-xs">
+                        {{ getProgressTypeLabel(todo.progress_type) }}
+                      </span>
+                    </div>
+                    <p v-if="todo.description" class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                      {{ todo.description }}
+                    </p>
+                  </div>
+
+                  <!-- 오른쪽 액션 영역 -->
+                  <div class="flex items-center space-x-3">
+                    <!-- 진행도 표시 (반복횟수가 있는 경우) -->
+                    <div v-if="getTodoTargetCount(todo.id) > 1" class="flex flex-col items-center space-y-1">
+                      <!-- 반복횟수 표시 -->
+                      <div class="text-center">
+                        <div class="text-lg font-bold text-blue-600 dark:text-blue-400">
+                          {{ getTodoCurrentCount(todo.id) }}/{{ getTodoTargetCount(todo.id) }}
+                        </div>
+                        <div class="text-xs text-gray-500 dark:text-gray-400">진행도</div>
+                      </div>
+                      <!-- 진행률 바 -->
+                      <div class="w-12 h-1 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                        <div 
+                          class="h-full bg-blue-500 transition-all duration-300"
+                          :style="{ width: Math.min((getTodoCurrentCount(todo.id) / getTodoTargetCount(todo.id)) * 100, 100) + '%' }"
+                        ></div>
+                      </div>
+                    </div>
+
+                    <!-- 체크박스 (반복횟수가 없는 경우) -->
+                    <input
+                      v-else
+                      type="checkbox"
+                      :checked="isTodoCompleted(todo.id)"
+                      @change="toggleTodo(todo.id, !isTodoCompleted(todo.id))"
+                      class="w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                    />
+
+                    <!-- 반복횟수 증가 버튼 또는 완료 체크 -->
+                    <div v-if="getTodoTargetCount(todo.id) > 1" class="flex items-center justify-center w-10 h-10">
+                      <button
+                        v-if="!isTodoCompleted(todo.id)"
+                        @click="incrementTodoCount(todo.id)"
+                        class="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center space-x-1"
+                        title="반복횟수 증가"
+                      >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                      </button>
+                      <div v-else class="text-green-500">
+                        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                          <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                        </svg>
+                      </div>
+                    </div>
+
+                    <!-- 삭제 버튼 -->
+                    <button
+                      @click="removeTodo(todo.id)"
+                      class="text-red-500 hover:text-red-700 transition-colors"
+                      title="숙제 제거"
+                    >
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </TransitionGroup>
             </div>
           </div>
         </div>
 
-        <!-- 숙제 추가 버튼 -->
-        <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6">
-          <div class="flex items-start">
-            <div class="flex-shrink-0">
-              <svg class="h-6 w-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-              </svg>
-            </div>
-            <div class="ml-3">
-              <h3 class="text-lg font-medium text-blue-800 dark:text-blue-200">
-                숙제 추가하기
-              </h3>
-              <p class="mt-2 text-blue-700 dark:text-blue-300">
-                캐릭터에게 숙제를 할당하거나 새로운 숙제를 생성할 수 있습니다.
-              </p>
-              <div class="mt-4 space-x-3">
-                <button
-                  @click="openAddTodoModal"
-                  class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md transition-colors"
-                >
-                  숙제 할당하기
-                </button>
-                <NuxtLink
-                  to="/todos"
-                  class="inline-flex items-center px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white font-medium rounded-md transition-colors"
-                >
-                  숙제 관리로 이동
-                </NuxtLink>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+                 <!-- 완료된 숙제 -->
+         <div v-if="completedTodos.length > 0" class="bg-green-50 dark:bg-green-900/10 rounded-lg p-4 sm:p-6 shadow-sm border border-green-200 dark:border-green-800">
+           <h3 class="text-base sm:text-lg font-medium text-green-900 dark:text-green-100 mb-3 sm:mb-4 flex items-center">
+             <svg class="w-5 h-5 mr-2 text-green-600 dark:text-green-400" fill="currentColor" viewBox="0 0 20 20">
+               <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+             </svg>
+             완료된 숙제 ({{ completedTodos.length }}개)
+           </h3>
+           <div class="space-y-3">
+             <TransitionGroup
+               name="slide-in"
+               tag="div"
+               class="space-y-3"
+             >
+               <div
+                 v-for="todo in completedTodos"
+                 :key="todo.id"
+                 class="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-3 p-3 rounded-lg bg-green-100 dark:bg-green-900/20 border border-green-200 dark:border-green-800"
+               >
+                 <!-- 숙제 정보 -->
+                 <div class="flex-1">
+                   <div class="flex flex-wrap items-center gap-2">
+                     <span class="font-medium text-green-900 dark:text-green-100 line-through text-sm sm:text-base">{{ todo.title }}</span>
+                     <span class="bg-green-200 dark:bg-green-800 text-green-800 dark:text-green-200 px-2 py-1 rounded-full text-xs">
+                       {{ getProgressTypeLabel(todo.progress_type) }}
+                     </span>
+                     <span class="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-1 rounded-full text-xs">
+                       {{ getCycleLabel(todo.repeat_cycle) }}
+                     </span>
+                   </div>
+                   <p v-if="todo.description" class="text-xs sm:text-sm text-green-700 dark:text-green-300 mt-1 line-through">
+                     {{ todo.description }}
+                   </p>
+                 </div>
+
+                 <!-- 완료 시간 -->
+                 <div class="text-xs text-green-600 dark:text-green-400 text-right sm:text-left">
+                   {{ getCompletedTime(todo.id) }}
+                 </div>
+               </div>
+             </TransitionGroup>
+           </div>
+         </div>
+
+                   <!-- 완료율 표시 -->
+          <div class="bg-white dark:bg-gray-800 rounded-lg p-4 sm:p-6 shadow-sm">
+            <h3 class="text-base sm:text-lg font-medium text-gray-900 dark:text-white mb-3 sm:mb-4">진행 현황</h3>
+           <div class="flex items-center space-x-4">
+             <div class="flex-1">
+               <div class="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-1">
+                 <span>전체 완료율</span>
+                 <span>{{ completionRate }}%</span>
+               </div>
+               <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                 <div
+                   class="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                   :style="{ width: completionRate + '%' }"
+                 ></div>
+               </div>
+             </div>
+             <div class="text-right">
+               <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ completedCount }}/{{ assignedCount }}</div>
+               <div class="text-sm text-gray-600 dark:text-gray-400">완료된 숙제</div>
+             </div>
+           </div>
+         </div>
+
+                   <!-- 숙제 추가 버튼 -->
+          <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 sm:p-6">
+           <div class="flex items-start">
+             <div class="flex-shrink-0">
+               <svg class="h-6 w-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+               </svg>
+             </div>
+                            <div class="ml-3">
+                 <h3 class="text-base sm:text-lg font-medium text-blue-800 dark:text-blue-200">
+                   숙제 추가하기
+                 </h3>
+                 <p class="mt-2 text-sm sm:text-base text-blue-700 dark:text-blue-300">
+                   캐릭터에게 숙제를 할당하거나 새로운 숙제를 생성할 수 있습니다.
+                 </p>
+                 <div class="mt-4 flex flex-col sm:flex-row gap-2 sm:gap-3">
+                   <button
+                     @click="openAddTodoModal"
+                     class="inline-flex items-center justify-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md transition-colors text-sm sm:text-base"
+                   >
+                     숙제 할당하기
+                   </button>
+                   <NuxtLink
+                     to="/todos"
+                     class="inline-flex items-center justify-center px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white font-medium rounded-md transition-colors text-sm sm:text-base"
+                   >
+                     숙제 관리로 이동
+                   </NuxtLink>
+                 </div>
+             </div>
+           </div>
+         </div>
+       </div>
 
       <!-- 캐릭터 미선택 상태 -->
       <div v-else-if="!selectedCharacter" class="text-center py-12">
@@ -408,7 +473,7 @@
 
     <!-- 숙제 할당 모달 -->
     <div v-if="showAddTodoModal" class="fixed inset-0 flex items-center justify-center z-50" style="background-color: rgba(0, 0, 0, 0.5);">
-      <div class="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[80vh] overflow-y-auto shadow-2xl">
+      <div class="bg-white dark:bg-gray-800 rounded-lg p-4 sm:p-6 w-full max-w-2xl mx-3 sm:mx-4 max-h-[90vh] sm:max-h-[80vh] overflow-y-auto shadow-2xl">
         <div class="flex items-center justify-between mb-6">
           <h3 class="text-lg font-medium text-gray-900 dark:text-white">
             {{ selectedCharacter?.name }}에게 숙제 할당하기
@@ -425,7 +490,7 @@
 
         <!-- 검색 필터 -->
         <div class="mb-6">
-          <div class="flex space-x-4 mb-4">
+          <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-4">
             <input
               v-model="searchQuery"
               type="text"
@@ -605,6 +670,11 @@ const assignedTodos = computed(() => {
 const assignedDailyTodos = computed(() => assignedTodos.value.filter(todo => todo.repeat_cycle === 'daily'))
 const assignedWeeklyTodos = computed(() => assignedTodos.value.filter(todo => todo.repeat_cycle === 'weekly'))
 const assignedMonthlyTodos = computed(() => assignedTodos.value.filter(todo => todo.repeat_cycle === 'weekend'))
+
+// 완료된 숙제 목록
+const completedTodos = computed(() => {
+  return assignedTodos.value.filter(todo => isTodoCompleted(todo.id))
+})
 
 const assignedCount = computed(() => todoCharacters.value.filter(tc => {
   const today = new Date().toISOString().split('T')[0]
@@ -881,6 +951,32 @@ const getCycleLabel = (cycle: string) => {
   return labels[cycle as keyof typeof labels] || cycle
 }
 
+// 완료 시간 표시
+const getCompletedTime = (todoId: string) => {
+  if (!selectedCharacter.value) return ''
+  
+  const todoCharacter = todoCharacters.value.find(tc => 
+    tc.todo_id === todoId && 
+    tc.character_id === selectedCharacter.value?.id &&
+    tc.is_completed
+  )
+  
+  if (!todoCharacter?.completed_at) return ''
+  
+  const completedDate = new Date(todoCharacter.completed_at)
+  const now = new Date()
+  const diffInMinutes = Math.floor((now.getTime() - completedDate.getTime()) / (1000 * 60))
+  
+  if (diffInMinutes < 1) return '방금 전'
+  if (diffInMinutes < 60) return `${diffInMinutes}분 전`
+  
+  const diffInHours = Math.floor(diffInMinutes / 60)
+  if (diffInHours < 24) return `${diffInHours}시간 전`
+  
+  const diffInDays = Math.floor(diffInHours / 24)
+  return `${diffInDays}일 전`
+}
+
 // 숙제가 이미 할당되었는지 확인
 const isTodoAssigned = (todoId: string) => {
   return todoCharacters.value.some(tc => 
@@ -1027,4 +1123,61 @@ onMounted(async () => {
     console.error('Error in onMounted:', error)
   }
 })
-</script> 
+</script>
+
+<style scoped>
+/* 슬라이드 아웃 애니메이션 */
+.slide-out-enter-active,
+.slide-out-leave-active {
+  transition: all 0.6s ease-out;
+}
+
+.slide-out-enter-from {
+  opacity: 0;
+  transform: translateX(-30px);
+}
+
+.slide-out-leave-to {
+  opacity: 0;
+  transform: translateX(30px);
+}
+
+.slide-out-move {
+  transition: transform 0.6s ease-out;
+}
+
+/* 슬라이드 인 애니메이션 */
+.slide-in-enter-active,
+.slide-in-leave-active {
+  transition: all 0.6s ease-out;
+}
+
+.slide-in-enter-from {
+  opacity: 0;
+  transform: translateX(30px);
+}
+
+.slide-in-leave-to {
+  opacity: 0;
+  transform: translateX(-30px);
+}
+
+.slide-in-move {
+  transition: transform 0.6s ease-out;
+}
+
+/* 모바일 터치 최적화 */
+@media (max-width: 640px) {
+  .slide-out-enter-active,
+  .slide-out-leave-active,
+  .slide-in-enter-active,
+  .slide-in-leave-active {
+    transition: all 0.5s ease-out;
+  }
+  
+  .slide-out-move,
+  .slide-in-move {
+    transition: transform 0.5s ease-out;
+  }
+}
+</style> 
