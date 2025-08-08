@@ -55,6 +55,7 @@ export default defineEventHandler(async (event) => {
         completion_date,
         current_count,
         target_count,
+        is_shared,
         created_at,
         updated_at
       `)

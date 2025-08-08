@@ -56,12 +56,17 @@ export default defineEventHandler(async (event) => {
       .single()
 
     if (existingMapping) {
+      // 요청 본문에서 is_shared 값 가져오기
+      const body = await readBody(event)
+      const isShared = body?.is_shared !== undefined ? body.is_shared : existingMapping.is_shared
+
       // 기존 매핑 업데이트
       const { data: updatedMapping, error: updateError } = await supabaseAdmin
         .from('todo_characters')
         .update({
           is_completed: is_completed,
-          completed_at: is_completed ? new Date().toISOString() : null
+          completed_at: is_completed ? new Date().toISOString() : null,
+          is_shared: isShared
         })
         .eq('id', existingMapping.id)
         .select()
@@ -80,6 +85,10 @@ export default defineEventHandler(async (event) => {
         todoCharacter: updatedMapping
       }
     } else {
+      // 요청 본문에서 is_shared 값 가져오기
+      const body = await readBody(event)
+      const isShared = body?.is_shared || false
+
       // 새로운 매핑 생성
       const { data: newMapping, error: createError } = await supabaseAdmin
         .from('todo_characters')
@@ -88,7 +97,8 @@ export default defineEventHandler(async (event) => {
           character_id: characterId,
           is_completed: is_completed,
           completed_at: is_completed ? new Date().toISOString() : null,
-          completion_date: today
+          completion_date: today,
+          is_shared: isShared
         })
         .select()
         .single()

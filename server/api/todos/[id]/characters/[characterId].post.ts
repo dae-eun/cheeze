@@ -74,6 +74,10 @@ export default defineEventHandler(async (event) => {
       })
     }
 
+    // 요청 본문에서 is_shared 값 가져오기
+    const body = await readBody(event)
+    const isShared = body?.is_shared || false
+
     // 숙제를 캐릭터에 할당
     const { data: todoCharacter, error: assignError } = await supabaseAdmin
       .from('todo_characters')
@@ -83,7 +87,8 @@ export default defineEventHandler(async (event) => {
         is_completed: false,
         completion_date: today,
         target_count: todo.target_count || 1,
-        current_count: 0
+        current_count: 0,
+        is_shared: isShared
       })
       .select()
       .single()

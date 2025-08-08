@@ -472,15 +472,16 @@
     </div>
 
     <!-- 숙제 할당 모달 -->
-    <div v-if="showAddTodoModal" class="fixed inset-0 flex items-center justify-center z-50" style="background-color: rgba(0, 0, 0, 0.5);">
-      <div class="bg-white dark:bg-gray-800 rounded-lg p-4 sm:p-6 w-full max-w-2xl mx-3 sm:mx-4 max-h-[90vh] sm:max-h-[80vh] overflow-y-auto shadow-2xl">
+    <div v-if="showAddTodoModal" class="fixed inset-0 flex items-center justify-center z-50" style="background-color: rgba(0, 0, 0, 0.5);" @click="showAddTodoModal = false">
+      <div class="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto shadow-2xl" @click.stop>
+        <!-- 헤더 -->
         <div class="flex items-center justify-between mb-6">
-          <h3 class="text-lg font-medium text-gray-900 dark:text-white">
+          <h3 class="text-xl font-semibold text-gray-900 dark:text-white">
             {{ selectedCharacter?.name }}에게 숙제 할당하기
           </h3>
           <button
             @click="showAddTodoModal = false"
-            class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+            class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
           >
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -488,67 +489,86 @@
           </button>
         </div>
 
-        <!-- 검색 필터 -->
+        <!-- 검색 및 필터 -->
         <div class="mb-6">
-          <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-4">
+          <div class="flex gap-3">
             <input
               v-model="searchQuery"
               type="text"
               placeholder="숙제 검색..."
-              class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
             <select
               v-model="selectedCycle"
-              class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="">모든 주기</option>
               <option value="daily">일간</option>
               <option value="weekly">주간</option>
-                              <option value="weekend">주말</option>
+              <option value="weekend">주말</option>
             </select>
           </div>
         </div>
 
-                 <!-- 숙제 목록 -->
-         <div class="space-y-3 max-h-96 overflow-y-auto">
-           <div
-             v-for="todo in filteredTodos"
-             :key="todo.id"
-             class="flex items-center p-4 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
-           >
-             <div class="flex-1">
-               <div class="flex items-center space-x-2 mb-2">
-                 <span class="font-medium text-gray-900 dark:text-white">{{ todo.title }}</span>
-                 <span class="bg-purple-100 dark:bg-purple-900/20 text-purple-800 dark:text-purple-300 px-2 py-1 rounded-full text-xs">
-                   {{ getProgressTypeLabel(todo.progress_type) }}
-                 </span>
-                 <span class="bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300 px-2 py-1 rounded-full text-xs">
-                   {{ getCycleLabel(todo.repeat_cycle) }}
-                 </span>
-                 <span v-if="todo.is_admin_todo" class="bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-300 px-2 py-1 rounded-full text-xs">
-                   관리자
-                 </span>
-                 <span v-if="isTodoAssigned(todo.id)" class="bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300 px-2 py-1 rounded-full text-xs">
-                   할당됨
-                 </span>
-               </div>
-               <p v-if="todo.description" class="text-sm text-gray-600 dark:text-gray-400">
-                 {{ todo.description }}
-               </p>
-             </div>
-             <!-- 토글 스위치 -->
-             <button
-               @click="toggleTodoSelection(todo.id)"
-               class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-               :class="getTodoToggleState(todo.id) ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'"
-             >
-               <span
-                 class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
-                 :class="getTodoToggleState(todo.id) ? 'translate-x-6' : 'translate-x-1'"
-               ></span>
-             </button>
-           </div>
-         </div>
+        <!-- 숙제 목록 -->
+        <div class="space-y-2 max-h-96 overflow-y-auto pr-2">
+          <div
+            v-for="todo in filteredTodos"
+            :key="todo.id"
+            class="flex items-start space-x-4 p-4 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+          >
+            <!-- 숙제 정보 -->
+            <div class="flex-1">
+              <div class="flex items-center space-x-2 mb-1">
+                <span class="font-medium text-gray-900 dark:text-white">{{ todo.title }}</span>
+                <span v-if="todo.description" class="text-sm text-gray-500 dark:text-gray-400">
+                  {{ todo.description }}
+                </span>
+              </div>
+              
+              <!-- 태그들 -->
+              <div class="flex flex-wrap gap-1 mt-2">
+                <span class="bg-purple-100 dark:bg-purple-900/20 text-purple-800 dark:text-purple-300 px-2 py-1 rounded-full text-xs">
+                  {{ getProgressTypeLabel(todo.progress_type) }}
+                </span>
+                <span class="bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300 px-2 py-1 rounded-full text-xs">
+                  {{ getCycleLabel(todo.repeat_cycle) }}
+                </span>
+                <span v-if="todo.is_admin_todo" class="bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-300 px-2 py-1 rounded-full text-xs">
+                  관리자
+                </span>
+                <span v-if="isTodoAssigned(todo.id)" class="bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300 px-2 py-1 rounded-full text-xs">
+                  할당됨
+                </span>
+              </div>
+            </div>
+
+            <!-- 토글 스위치 (오른쪽) -->
+            <div class="flex flex-row items-center space-x-3 pt-1">
+                        <!-- 길드 공유 체크박스 -->
+              <div v-if="getTodoToggleState(todo.id)" class="flex flex-col items-center space-y-1">
+                <span class="text-xs text-blue-700 dark:text-blue-300 text-center">길드에 공유</span>
+                <input
+                  :checked="getShareWithGuildState(todo.id)"
+                  @change="toggleShareWithGuild(todo.id)"
+                  type="checkbox"
+                  class="w-4 h-4 rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                />
+              </div>
+              <button
+                @click="toggleTodoSelection(todo.id)"
+                class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                :class="getTodoToggleState(todo.id) ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'"
+              >
+                <span
+                  class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
+                  :class="getTodoToggleState(todo.id) ? 'translate-x-6' : 'translate-x-1'"
+                ></span>
+              </button>
+
+            </div>
+          </div>
+        </div>
 
         <!-- 할당된 숙제가 없을 때 -->
         <div v-if="filteredTodos.length === 0" class="text-center py-8">
@@ -560,26 +580,27 @@
           <p class="text-gray-600 dark:text-gray-400">할당할 수 있는 숙제가 없습니다.</p>
         </div>
 
-                 <div class="mt-6 flex justify-between items-center">
-           <div class="text-sm text-gray-600 dark:text-gray-400">
-             {{ pendingChanges.size }}개 변경사항 대기 중
-           </div>
-           <div class="flex space-x-3">
-             <button
-               @click="showAddTodoModal = false"
-               class="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-700 font-medium rounded-md transition-colors"
-             >
-               닫기
-             </button>
-             <button
-               @click="applyChanges"
-               :disabled="pendingChanges.size === 0 || assigning"
-               class="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-medium rounded-md transition-colors"
-             >
-               {{ assigning ? '적용 중...' : '변경하기' }}
-             </button>
-           </div>
-         </div>
+        <!-- 하단 버튼 -->
+        <div class="mt-6 flex justify-between items-center pt-4 border-t border-gray-200 dark:border-gray-600">
+          <div class="text-sm text-gray-600 dark:text-gray-400">
+            {{ pendingChanges.size }}개 변경사항 대기 중
+          </div>
+          <div class="flex space-x-3">
+            <button
+              @click="showAddTodoModal = false"
+              class="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-700 font-medium rounded-lg transition-colors"
+            >
+              닫기
+            </button>
+            <button
+              @click="applyChanges"
+              :disabled="pendingChanges.size === 0 || assigning"
+              class="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-medium rounded-lg transition-colors"
+            >
+              {{ assigning ? '적용 중...' : '변경하기' }}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -621,6 +642,7 @@ interface TodoCharacter {
   completion_date: string
   current_count: number
   target_count: number
+  is_shared: boolean
 }
 
 interface User {
@@ -655,7 +677,12 @@ const searchQuery = ref('')
 const selectedCycle = ref('')
 const assigning = ref(false)
 const selectedTodoIds = ref<string[]>([])
-const pendingChanges = ref<Map<string, boolean>>(new Map())
+interface PendingChange {
+  isAssigned: boolean
+  isShared: boolean
+}
+
+const pendingChanges = ref<Map<string, PendingChange>>(new Map())
 
 // 계산된 속성들 - 할당된 숙제들만 필터링
 const assignedTodos = computed(() => {
@@ -1014,7 +1041,7 @@ const getTodoToggleState = (todoId: string) => {
   const pendingState = pendingChanges.value.get(todoId)
   
   // 대기 중인 변경사항이 있으면 그것을 반환, 없으면 현재 상태 반환
-  return pendingState !== undefined ? pendingState : currentState
+  return pendingState !== undefined ? pendingState.isAssigned : currentState
 }
 
 // 토글 선택 (실제 적용은 하지 않고 상태만 변경)
@@ -1023,10 +1050,44 @@ const toggleTodoSelection = (todoId: string) => {
   const pendingState = pendingChanges.value.get(todoId)
   
   // 현재 실제 상태
-  const actualState = pendingState !== undefined ? pendingState : currentState
+  const actualState = pendingState !== undefined ? pendingState.isAssigned : currentState
+  
+  // 기존 공유 설정 유지하거나 기본값 설정
+  const currentShared = pendingState?.isShared ?? false
   
   // 반대 상태로 변경
-  pendingChanges.value.set(todoId, !actualState)
+  pendingChanges.value.set(todoId, {
+    isAssigned: !actualState,
+    isShared: currentShared
+  })
+}
+
+// 개별 todo의 공유 설정 토글
+const toggleShareWithGuild = (todoId: string) => {
+  const pendingState = pendingChanges.value.get(todoId)
+  const currentState = isTodoAssigned(todoId)
+  
+  // 현재 상태 가져오기
+  const currentAssigned = pendingState?.isAssigned ?? currentState
+  const currentShared = pendingState?.isShared ?? false
+  
+  // 공유 설정만 토글
+  pendingChanges.value.set(todoId, {
+    isAssigned: currentAssigned,
+    isShared: !currentShared
+  })
+}
+
+// 개별 todo의 공유 설정 상태 가져오기
+const getShareWithGuildState = (todoId: string) => {
+  const pendingState = pendingChanges.value.get(todoId)
+  if (pendingState) {
+    return pendingState.isShared
+  }
+  
+  // 현재 할당된 상태에서 공유 설정 확인
+  const todoCharacter = todoCharacters.value.find(tc => tc.todo_id === todoId)
+  return todoCharacter?.is_shared ?? false
 }
 
 // 변경사항 적용하기
@@ -1037,15 +1098,18 @@ const applyChanges = async () => {
   try {
     const promises: Promise<any>[] = []
     
-    for (const [todoId, newState] of pendingChanges.value) {
+    for (const [todoId, change] of pendingChanges.value) {
       const currentState = isTodoAssigned(todoId)
       
-      if (newState !== currentState) {
-        if (newState) {
+      if (change.isAssigned !== currentState) {
+        if (change.isAssigned) {
           // 할당
           promises.push(
             $fetch(`/api/todos/${todoId}/characters/${selectedCharacter.value!.id}`, {
-              method: 'POST'
+              method: 'POST',
+              body: {
+                is_shared: change.isShared
+              }
             }) as Promise<any>
           )
         } else {
@@ -1056,6 +1120,16 @@ const applyChanges = async () => {
             }) as Promise<any>
           )
         }
+      } else if (change.isAssigned && currentState) {
+        // 할당 상태는 유지하지만 공유 설정만 변경
+        promises.push(
+          $fetch(`/api/todos/${todoId}/characters/${selectedCharacter.value!.id}`, {
+            method: 'PUT',
+            body: {
+              is_shared: change.isShared
+            }
+          }) as Promise<any>
+        )
       }
     }
 
