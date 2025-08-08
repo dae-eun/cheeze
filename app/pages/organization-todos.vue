@@ -123,66 +123,90 @@
           </button>
         </div>
 
-        <!-- 캐릭터별 숙제 목록 -->
-        <div v-if="selectedMember" class="space-y-6">
-          <div
-            v-for="character in selectedMember.characters"
-            :key="character.id"
-            class="border border-gray-200 dark:border-gray-700 rounded-lg p-4"
-          >
-            <div class="flex items-center justify-between mb-4">
-              <h4 class="text-lg font-medium text-gray-900 dark:text-white">
-                {{ character.name }}
-              </h4>
-              <span class="text-sm text-gray-500 dark:text-gray-400">
-                {{ character.servers?.name }}
-              </span>
-            </div>
+                 <!-- 기간별 필터 버튼 -->
+         <div class="mb-6">
+           <div class="flex flex-wrap gap-2">
+             <button
+               v-for="cycle in ['all', 'daily', 'weekly', 'weekend']"
+               :key="cycle"
+               @click="selectedCycle = cycle"
+               :class="[
+                 'px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+                 selectedCycle === cycle
+                   ? 'bg-blue-600 text-white'
+                   : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+               ]"
+             >
+               {{ getCycleFilterLabel(cycle) }}
+             </button>
+           </div>
+         </div>
 
-            <!-- 해당 캐릭터의 공유된 숙제들 -->
-            <div class="space-y-3">
-              <div
-                v-for="todo in getCharacterTodos(character.id)"
-                :key="todo.id"
-                class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
-              >
-                <div class="flex-1">
-                  <h5 class="font-medium text-gray-900 dark:text-white">
-                    {{ todo.todos?.title }}
-                  </h5>
-                  <p class="text-sm text-gray-600 dark:text-gray-400">
-                    {{ todo.todos?.description }}
-                  </p>
-                  <div class="flex items-center space-x-4 mt-2 text-xs text-gray-500 dark:text-gray-400">
-                    <span>{{ getProgressTypeLabel(todo.todos?.progress_type) }}</span>
-                    <span>{{ getRepeatCycleLabel(todo.todos?.repeat_cycle) }}</span>
-                    <span v-if="todo.target_count > 1">
-                      {{ todo.current_count }}/{{ todo.target_count }}
-                    </span>
+         <!-- 캐릭터별 숙제 목록 -->
+         <div v-if="selectedMember" class="space-y-6">
+           <div
+             v-for="character in selectedMember.characters"
+             :key="character.id"
+             class="border border-gray-200 dark:border-gray-700 rounded-lg p-4"
+           >
+             <div class="flex items-center justify-between mb-4">
+               <h4 class="text-lg font-medium text-gray-900 dark:text-white">
+                 {{ character.name }}
+               </h4>
+               <span class="text-sm text-gray-500 dark:text-gray-400">
+                 {{ character.servers?.name }}
+               </span>
+             </div>
+
+                           <!-- 해당 캐릭터의 공유된 숙제들 -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                <div
+                  v-for="todo in getFilteredCharacterTodos(character.id)"
+                  :key="todo.id"
+                  class="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
+                >
+                  <div class="flex-1">
+                    <h5 class="font-medium text-gray-900 dark:text-white text-sm">
+                      {{ todo.todos?.title }}
+                    </h5>
+                    <p v-if="todo.todos?.description" class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                      {{ todo.todos?.description }}
+                    </p>
+                    <div class="flex flex-wrap items-center gap-2 mt-2 text-xs text-gray-500 dark:text-gray-400">
+                      <span class="bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300 px-1.5 py-0.5 rounded-full">
+                        {{ getProgressTypeLabel(todo.todos?.progress_type) }}
+                      </span>
+                      <span class="bg-purple-100 dark:bg-purple-900/20 text-purple-800 dark:text-purple-300 px-1.5 py-0.5 rounded-full">
+                        {{ getRepeatCycleLabel(todo.todos?.repeat_cycle) }}
+                      </span>
+                      <span v-if="todo.target_count > 1" class="bg-orange-100 dark:bg-orange-900/20 text-orange-800 dark:text-orange-300 px-1.5 py-0.5 rounded-full">
+                        {{ todo.current_count }}/{{ todo.target_count }}
+                      </span>
+                    </div>
+                    
+                    <!-- 진행중/완료 상태를 제목 아래로 이동 -->
+                    <div class="flex items-center space-x-2 mt-3">
+                      <span
+                        :class="todo.is_completed ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-500'"
+                        class="text-xs font-medium"
+                      >
+                        {{ todo.is_completed ? '완료' : '진행중' }}
+                      </span>
+                      <div
+                        :class="todo.is_completed ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'"
+                        class="w-2 h-2 rounded-full"
+                      ></div>
+                    </div>
                   </div>
                 </div>
-                
-                <div class="flex items-center space-x-3">
-                  <span
-                    :class="todo.is_completed ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-500'"
-                    class="text-sm font-medium"
-                  >
-                    {{ todo.is_completed ? '완료' : '진행중' }}
-                  </span>
-                  <div
-                    :class="todo.is_completed ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'"
-                    class="w-3 h-3 rounded-full"
-                  ></div>
+
+                <!-- 해당 캐릭터에 공유된 숙제가 없는 경우 -->
+                <div v-if="getFilteredCharacterTodos(character.id).length === 0" class="col-span-full text-center py-4 text-gray-500 dark:text-gray-400">
+                  {{ selectedCycle === 'all' ? '공유된 숙제가 없습니다.' : `${getCycleFilterLabel(selectedCycle)} 숙제가 없습니다.` }}
                 </div>
               </div>
-
-              <!-- 해당 캐릭터에 공유된 숙제가 없는 경우 -->
-              <div v-if="getCharacterTodos(character.id).length === 0" class="text-center py-4 text-gray-500 dark:text-gray-400">
-                공유된 숙제가 없습니다.
-              </div>
-            </div>
-          </div>
-        </div>
+           </div>
+         </div>
       </div>
     </div>
   </div>
@@ -265,6 +289,7 @@ const organizationMembers = ref<OrganizationMember[]>([])
 const loading = ref(true)
 const showMemberModal = ref(false)
 const selectedMember = ref<OrganizationMember | null>(null)
+const selectedCycle = ref<'all' | 'daily' | 'weekly' | 'weekend'>('all')
 
 // 데이터 로드
 const loadOrganizationTodos = async () => {
@@ -288,6 +313,7 @@ const loadOrganizationTodos = async () => {
 // 조직원 상세 모달 열기
 const openMemberDetail = (member: OrganizationMember) => {
   selectedMember.value = member
+  selectedCycle.value = 'all' // 필터 초기화
   showMemberModal.value = true
 }
 
@@ -295,6 +321,24 @@ const openMemberDetail = (member: OrganizationMember) => {
 const getCharacterTodos = (characterId: string) => {
   if (!selectedMember.value) return []
   return selectedMember.value.todos.filter(todo => todo.character_id === characterId)
+}
+
+// 필터링된 캐릭터별 숙제 가져오기
+const getFilteredCharacterTodos = (characterId: string) => {
+  const todos = getCharacterTodos(characterId)
+  if (selectedCycle.value === 'all') return todos
+  return todos.filter(todo => todo.todos?.repeat_cycle === selectedCycle.value)
+}
+
+// 기간별 필터 라벨
+const getCycleFilterLabel = (cycle: string) => {
+  const labels: Record<string, string> = {
+    all: '전체',
+    daily: '일간',
+    weekly: '주간',
+    weekend: '주말'
+  }
+  return labels[cycle] || '전체'
 }
 
 // 진행 종류 라벨
