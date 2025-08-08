@@ -18,7 +18,8 @@ export default defineNuxtConfig({
       supabaseUrl: process.env.SUPABASE_URL,
       supabaseAnonKey: process.env.SUPABASE_ANON_KEY
     },
-    supabaseServiceKey: process.env.SUPABASE_SERVICE_ROLE_KEY
+    supabaseServiceKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
+    cronSecret: process.env.CRON_SECRET
   },
 
   css: ['~/assets/css/main.css']
