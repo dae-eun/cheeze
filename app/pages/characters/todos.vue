@@ -1228,7 +1228,23 @@ const toggleShareWithGuild = (todoId: string) => {
   
   // 현재 상태 가져오기
   const currentAssigned = pendingState?.isAssigned ?? currentState
-  const currentShared = pendingState?.isShared ?? false
+  
+  // pendingState가 있으면 그 값을 사용, 없으면 데이터베이스에서 현재 값 가져오기
+  let currentShared: boolean
+  if (pendingState) {
+    currentShared = pendingState.isShared
+  } else {
+    const todoCharacter = todoCharacters.value.find(tc => tc.todo_id === todoId)
+    currentShared = todoCharacter?.is_shared ?? false
+  }
+  
+  console.log(`toggleShareWithGuild(${todoId}):`, {
+    pendingState: pendingState,
+    currentState: currentState,
+    currentAssigned: currentAssigned,
+    currentShared: currentShared,
+    newShared: !currentShared
+  })
   
   // 공유 설정만 토글
   pendingChanges.value.set(todoId, {
@@ -1241,12 +1257,15 @@ const toggleShareWithGuild = (todoId: string) => {
 const getShareWithGuildState = (todoId: string) => {
   const pendingState = pendingChanges.value.get(todoId)
   if (pendingState) {
+    console.log(`getShareWithGuildState(${todoId}): pendingState.isShared = ${pendingState.isShared}`)
     return pendingState.isShared
   }
   
   // 현재 할당된 상태에서 공유 설정 확인
   const todoCharacter = todoCharacters.value.find(tc => tc.todo_id === todoId)
-  return todoCharacter?.is_shared ?? false
+  const result = todoCharacter?.is_shared ?? false
+  console.log(`getShareWithGuildState(${todoId}): todoCharacter?.is_shared = ${todoCharacter?.is_shared}, result = ${result}`)
+  return result
 }
 
 // 변경사항 적용하기
@@ -1260,9 +1279,17 @@ const applyChanges = async () => {
     for (const [todoId, change] of pendingChanges.value) {
       const currentState = isTodoAssigned(todoId)
       
+      console.log(`applyChanges for ${todoId}:`, {
+        change: change,
+        currentState: currentState,
+        isAssignedChanged: change.isAssigned !== currentState,
+        isAssignedAndCurrent: change.isAssigned && currentState
+      })
+      
       if (change.isAssigned !== currentState) {
         if (change.isAssigned) {
           // 할당
+          console.log(`POST 요청: is_shared = ${change.isShared}`)
           promises.push(
             $fetch(`/api/todos/${todoId}/characters/${selectedCharacter.value!.id}`, {
               method: 'POST',
@@ -1281,6 +1308,7 @@ const applyChanges = async () => {
         }
       } else if (change.isAssigned && currentState) {
         // 할당 상태는 유지하지만 공유 설정만 변경
+        console.log(`PUT 요청: is_shared = ${change.isShared}`)
         promises.push(
           $fetch(`/api/todos/${todoId}/characters/${selectedCharacter.value!.id}`, {
             method: 'PUT',

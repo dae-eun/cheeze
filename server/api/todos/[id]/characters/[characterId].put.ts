@@ -26,7 +26,11 @@ export default defineEventHandler(async (event) => {
     const todoId = getRouterParam(event, 'id')
     const characterId = getRouterParam(event, 'characterId')
     const body = await readBody(event)
-    const { is_completed } = body
+    const { is_completed, is_shared } = body
+    
+    console.log('PUT 요청 본문:', body)
+    console.log('is_completed:', is_completed, 'type:', typeof is_completed)
+    console.log('is_shared:', is_shared, 'type:', typeof is_shared)
 
     // 캐릭터가 사용자의 것인지 확인
     const { data: character, error: characterError } = await supabaseAdmin
@@ -56,9 +60,8 @@ export default defineEventHandler(async (event) => {
       .single()
 
     if (existingMapping) {
-      // 요청 본문에서 is_shared 값 가져오기
-      const body = await readBody(event)
-      const isShared = body?.is_shared !== undefined ? body.is_shared : existingMapping.is_shared
+      // 요청 본문에서 is_shared 값 가져오기 (이미 위에서 읽었음)
+      const isShared = is_shared !== undefined ? is_shared : existingMapping.is_shared
 
       // 기존 매핑 업데이트
       const { data: updatedMapping, error: updateError } = await supabaseAdmin
@@ -85,9 +88,8 @@ export default defineEventHandler(async (event) => {
         todoCharacter: updatedMapping
       }
     } else {
-      // 요청 본문에서 is_shared 값 가져오기
-      const body = await readBody(event)
-      const isShared = body?.is_shared || false
+      // 요청 본문에서 is_shared 값 가져오기 (이미 위에서 읽었음)
+      const isShared = is_shared || false
 
       // 새로운 매핑 생성
       const { data: newMapping, error: createError } = await supabaseAdmin
