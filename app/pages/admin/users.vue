@@ -303,10 +303,7 @@ onMounted(async () => {
 
 const loadData = async () => {
   try {
-    await Promise.all([
-      loadUsers(),
-      loadOrganizations()
-    ])
+    await loadUsers()
   } catch (error) {
     console.error('Error loading data:', error)
   } finally {
@@ -316,43 +313,29 @@ const loadData = async () => {
 
 const loadUsers = async () => {
   try {
-    const { data, error } = await supabase
-      .from('users')
-      .select(`
-        *,
-        characters:characters(
-          id,
-          name,
-          server_id,
-          is_main,
-          servers:servers(name)
-        )
-      `)
-      .order('created_at', { ascending: false })
+    const response = await $fetch('/api/admin/users', {
+      method: 'GET',
+      query: {
+        search: searchQuery.value,
+        organization_id: filterOrganization.value,
+        sort_by: sortBy.value,
+        sort_order: 'desc',
+        page: 1,
+        limit: 100
+      }
+    })
 
-    if (error) throw error
-
-    users.value = data?.map(user => ({
-      ...user,
-      character_count: user.characters?.length || 0
-    })) || []
+    if (response.success) {
+      users.value = response.users || []
+      organizations.value = response.organizations || []
+    }
   } catch (error) {
     console.error('Error loading users:', error)
   }
 }
 
 const loadOrganizations = async () => {
-  try {
-    const { data, error } = await supabase
-      .from('organizations')
-      .select('id, name')
-      .order('name')
-
-    if (error) throw error
-    organizations.value = data || []
-  } catch (error) {
-    console.error('Error loading organizations:', error)
-  }
+  // loadUsers에서 이미 조직 정보를 함께 가져오므로 별도 호출 불필요
 }
 
 const viewUserDetails = (user: User) => {
@@ -376,36 +359,14 @@ const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleDateString('ko-KR')
 }
 
+// 검색과 필터링이 변경될 때마다 데이터 다시 로드
+watch([searchQuery, filterOrganization, sortBy], () => {
+  loadUsers()
+}, { debounce: 300 })
+
 // 계산된 속성들
 const filteredUsers = computed(() => {
-  let filtered = users.value
-
-  if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase()
-    filtered = filtered.filter(user => 
-      user.name?.toLowerCase().includes(query) ||
-      user.email?.toLowerCase().includes(query)
-    )
-  }
-
-  if (filterOrganization.value) {
-    filtered = filtered.filter(user => user.organization_id === filterOrganization.value)
-  }
-
-  // 정렬
-  filtered.sort((a, b) => {
-    switch (sortBy.value) {
-      case 'name':
-        return (a.name || '').localeCompare(b.name || '')
-      case 'email':
-        return (a.email || '').localeCompare(b.email || '')
-      case 'created_at':
-      default:
-        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-    }
-  })
-
-  return filtered
+  return users.value
 })
 
 const organizationCount = computed(() => {

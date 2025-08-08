@@ -18,27 +18,28 @@
            </div>
            
                        <div v-else class="space-y-4">
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">이름</label>
-                  <input
-                    v-model="userInfo.name"
-                    type="text"
-                    class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                    :disabled="!isEditingUser"
-                  />
-                </div>
-                
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">이메일</label>
-                  <input
-                    v-model="userInfo.email"
-                    type="email"
-                    class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                    disabled
-                  />
-                </div>
+                          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">이름</label>
+                <input
+                  v-model="userInfo.name"
+                  type="text"
+                  class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                  :disabled="!isEditingUser"
+                />
               </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">이메일</label>
+                <input
+                  v-model="userInfo.email"
+                  type="email"
+                  class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                  disabled
+                />
+              </div>
+            </div>
+            
             </div>
         </div>
 
@@ -213,7 +214,11 @@ interface Character {
   name: string
   server_id: string
   is_main: boolean
-  user_id: string
+  created_at: string
+  updated_at: string
+  servers: {
+    name: string
+  }
 }
 
 interface Server {
@@ -287,13 +292,14 @@ const loadUserInfo = async () => {
 
     if (response.success) {
       console.log('Setting user info:', response.user)
+      const userData = response.user as { name: string; email: string }
       userInfo.value = { 
-        name: response.user.name, 
-        email: response.user.email 
+        name: userData.name, 
+        email: userData.email 
       }
       originalUserInfo.value = { 
-        name: response.user.name, 
-        email: response.user.email 
+        name: userData.name, 
+        email: userData.email 
       }
     } else {
       console.error('User API returned error:', response)
@@ -348,11 +354,22 @@ const cancelEditUser = () => {
 }
 
 const saveUserInfo = async () => {
-  if (!user.value) return
+  const currentUser = userStore.getCurrentUser()
+  if (!currentUser) {
+    console.error('No authenticated user found')
+    return
+  }
+
+  // 낙관적 업데이트 - 원래 데이터 백업
+  const originalName = originalUserInfo.value.name
+  const newName = userInfo.value.name
+
+  // 낙관적 업데이트 적용
+  originalUserInfo.value.name = newName
 
   savingUser.value = true
   try {
-    const response = await $fetch(`/api/users/${user.value.id}`, {
+    const response = await $fetch(`/api/users/${currentUser.id}`, {
       method: 'PUT',
       body: {
         name: userInfo.value.name
@@ -362,12 +379,22 @@ const saveUserInfo = async () => {
     console.log('User update API response:', response)
 
     if (response.success) {
-      originalUserInfo.value = { ...userInfo.value }
       isEditingUser.value = false
+      // 스토어의 사용자 정보도 업데이트
+      const user = userStore.getCurrentUser()
+      if (user) {
+        user.name = newName
+      }
     } else {
+      // 실패 시 원래 데이터로 롤백
+      originalUserInfo.value.name = originalName
+      userInfo.value.name = originalName
       console.error('User update API returned error:', response)
     }
   } catch (error) {
+    // 에러 발생 시 원래 데이터로 롤백
+    originalUserInfo.value.name = originalName
+    userInfo.value.name = originalName
     console.error('Error updating user info:', error)
   } finally {
     savingUser.value = false
@@ -406,12 +433,29 @@ const closeCharacterModal = () => {
 }
 
 const saveCharacter = async () => {
-  if (!user.value) return
+  const currentUser = userStore.getCurrentUser()
+  if (!currentUser) {
+    console.error('No authenticated user found')
+    return
+  }
 
   savingCharacter.value = true
   try {
     if (editingCharacter.value) {
-      // 캐릭터 수정
+      // 캐릭터 수정 - 낙관적 업데이트
+      const updatedCharacter = {
+        ...editingCharacter.value,
+        name: characterForm.value.name,
+        server_id: characterForm.value.serverId,
+        is_main: characterForm.value.isMain
+      }
+      
+      // 낙관적 업데이트 적용
+      const characterIndex = characters.value.findIndex(c => c.id === editingCharacter.value!.id)
+      if (characterIndex !== -1) {
+        characters.value[characterIndex] = updatedCharacter
+      }
+
       const response = await $fetch(`/api/characters/${editingCharacter.value.id}`, {
         method: 'PUT',
         body: {
@@ -422,14 +466,33 @@ const saveCharacter = async () => {
       })
 
       if (!response.success) {
+        // 실패 시 원래 데이터로 롤백
+        if (characterIndex !== -1) {
+          characters.value[characterIndex] = editingCharacter.value
+        }
         throw new Error('캐릭터 수정에 실패했습니다.')
       }
     } else {
-      // 새 캐릭터 추가
+      // 새 캐릭터 추가 - 낙관적 업데이트
+      const newCharacter = {
+        id: `temp-${Date.now()}`, // 임시 ID
+        name: characterForm.value.name,
+        server_id: characterForm.value.serverId,
+        is_main: characterForm.value.isMain,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        servers: {
+          name: getServerName(characterForm.value.serverId)
+        }
+      }
+
+      // 낙관적 업데이트 적용
+      characters.value.push(newCharacter)
+
       const response = await $fetch('/api/characters', {
         method: 'POST',
         body: {
-          user_id: user.value.id,
+          user_id: currentUser.id,
           name: characterForm.value.name,
           server_id: characterForm.value.serverId,
           is_main: characterForm.value.isMain
@@ -437,14 +500,38 @@ const saveCharacter = async () => {
       })
 
       if (!response.success) {
+        // 실패 시 추가된 캐릭터 제거
+        const tempIndex = characters.value.findIndex(c => c.id === newCharacter.id)
+        if (tempIndex !== -1) {
+          characters.value.splice(tempIndex, 1)
+        }
         throw new Error('캐릭터 추가에 실패했습니다.')
+      }
+
+      // 성공 시 실제 데이터로 교체
+      const responseData = response as { success: boolean; character: any }
+      if (responseData.character) {
+        const tempIndex = characters.value.findIndex(c => c.id === newCharacter.id)
+        if (tempIndex !== -1) {
+          characters.value[tempIndex] = {
+            ...responseData.character,
+            servers: {
+              name: getServerName(responseData.character.server_id)
+            }
+          }
+        }
       }
     }
 
+    // 스토어 캐시 무효화 및 새로고침
+    await charactersStore.fetchCharacters(true)
     await loadCharacters()
     closeCharacterModal()
   } catch (error) {
     console.error('Error saving character:', error)
+    // 에러 발생 시 전체 데이터 새로고침
+    await charactersStore.fetchCharacters(true)
+    await loadCharacters()
   } finally {
     savingCharacter.value = false
   }
@@ -453,17 +540,37 @@ const saveCharacter = async () => {
 const deleteCharacter = async (characterId: string) => {
   if (!confirm('정말로 이 캐릭터를 삭제하시겠습니까?')) return
 
+  // 낙관적 업데이트 - 삭제할 캐릭터 백업
+  const characterToDelete = characters.value.find(c => c.id === characterId)
+  if (!characterToDelete) return
+
+  // 낙관적 업데이트 적용
+  const characterIndex = characters.value.findIndex(c => c.id === characterId)
+  if (characterIndex !== -1) {
+    characters.value.splice(characterIndex, 1)
+  }
+
   try {
     const response = await $fetch(`/api/characters/${characterId}`, {
       method: 'DELETE'
     })
 
     if (response.success) {
+      // 성공 시 스토어 캐시 무효화 및 새로고침
+      await charactersStore.fetchCharacters(true)
       await loadCharacters()
     } else {
+      // 실패 시 원래 데이터로 롤백
+      if (characterIndex !== -1) {
+        characters.value.splice(characterIndex, 0, characterToDelete)
+      }
       console.error('Error deleting character:', response)
     }
   } catch (error) {
+    // 에러 발생 시 원래 데이터로 롤백
+    if (characterIndex !== -1) {
+      characters.value.splice(characterIndex, 0, characterToDelete)
+    }
     console.error('Error deleting character:', error)
   }
 }
