@@ -337,7 +337,8 @@ const addTodo = async () => {
       title: todoForm.value.title,
       description: todoForm.value.description,
       repeat_cycle: todoForm.value.repeat_cycle,
-      progress_type: todoForm.value.progress_type
+      progress_type: todoForm.value.progress_type,
+      target_count: todoForm.value.target_count
     }
     
     // Optimistic Update: 서버 응답 전에 UI 먼저 업데이트
@@ -347,6 +348,7 @@ const addTodo = async () => {
       description: formData.description,
       repeat_cycle: formData.repeat_cycle as 'daily' | 'weekly' | 'weekend',
       progress_type: formData.progress_type as 'dungeon' | 'quest' | 'purchase' | 'exchange' | 'other',
+      target_count: formData.target_count,
       is_admin_todo: false,
       organization_id: userStore.user?.organization_id,
       created_by: userStore.user?.id || '',
@@ -396,12 +398,16 @@ const updateTodo = async () => {
   try {
     adding.value = true
     
+    // editingTodo의 ID를 미리 저장 (closeModal() 호출 전에)
+    const todoId = editingTodo.value!.id
+    
     // 폼 데이터를 미리 저장 (closeModal() 호출 전에)
     const formData = {
       title: todoForm.value.title,
       description: todoForm.value.description,
       repeat_cycle: todoForm.value.repeat_cycle,
-      progress_type: todoForm.value.progress_type
+      progress_type: todoForm.value.progress_type,
+      target_count: todoForm.value.target_count
     }
     
     // Optimistic Update: 서버 응답 전에 UI 먼저 업데이트
@@ -411,35 +417,39 @@ const updateTodo = async () => {
       title: formData.title,
       description: formData.description,
       repeat_cycle: formData.repeat_cycle as 'daily' | 'weekly' | 'weekend',
-             progress_type: formData.progress_type as 'dungeon' | 'quest' | 'purchase' | 'exchange' | 'other',
+      progress_type: formData.progress_type as 'dungeon' | 'quest' | 'purchase' | 'exchange' | 'other',
+      target_count: formData.target_count,
       updated_at: new Date().toISOString()
     }
     
     // UI에 즉시 업데이트
-    const index = todos.value.findIndex(t => t.id === editingTodo.value!.id)
+    const index = todos.value.findIndex(t => t.id === todoId)
     if (index !== -1) {
       todos.value[index] = updatedTodo
     }
     closeModal()
     
     // 서버에 실제 요청 (저장된 폼 데이터 사용)
-    const response = await $fetch(`/api/todos/${editingTodo.value.id}`, {
+    console.log('수정 요청 데이터:', formData)
+    const response = await $fetch(`/api/todos/${todoId}`, {
       method: 'PUT',
       body: formData
     })
+
+    console.log('수정 응답:', response)
 
     if (response.success) {
       // 성공 시 서버 응답으로 업데이트 (필요한 경우)
       if ((response as any).todo) {
         const serverTodo = (response as any).todo as Todo
-        const index = todos.value.findIndex(t => t.id === editingTodo.value!.id)
+        const index = todos.value.findIndex(t => t.id === todoId)
         if (index !== -1) {
           todos.value[index] = serverTodo
         }
       }
     } else {
       // 실패 시 원래 데이터로 복원
-      const index = todos.value.findIndex(t => t.id === editingTodo.value!.id)
+      const index = todos.value.findIndex(t => t.id === todoId)
       if (index !== -1) {
         todos.value[index] = originalTodo
       }

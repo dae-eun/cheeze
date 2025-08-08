@@ -43,7 +43,8 @@ export default defineEventHandler(async (event) => {
         is_admin_todo,
         organization_id,
         repeat_cycle,
-        progress_type
+        progress_type,
+        target_count
       `)
 
     // 시스템(관리자) 숙제과 사용자 본인이 생성한 숙제만 표시
