@@ -447,23 +447,66 @@
 
       <!-- 숙제 없음 상태 -->
       <div v-else class="text-center py-12">
+        <!-- 아이콘 -->
         <div class="text-gray-400 dark:text-gray-500 mb-4">
-          <svg class="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+          <svg
+            class="w-16 h-16 mx-auto"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+            ></path>
           </svg>
         </div>
-        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">숙제가 없습니다</h3>
-        <p class="text-gray-600 dark:text-gray-400">이 캐릭터에 할당된 숙제가 없습니다.</p>
-        <div class="mt-4 space-x-3">
+
+        <!-- 텍스트 -->
+        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">
+          숙제가 없습니다
+        </h3>
+        <p class="text-gray-600 dark:text-gray-400">
+          이 캐릭터에 할당된 숙제가 없습니다.
+        </p>
+
+        <!-- 버튼 모음 -->
+        <div class="mt-4 flex flex-wrap justify-center gap-3">
+          <!-- 숙제 할당하기 -->
           <button
             @click="openAddTodoModal"
-            class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md transition-colors"
+            class="flex items-center h-10 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md transition-colors"
           >
             숙제 할당하기
           </button>
+
+          <!-- 숙제 복사 -->
+          <button
+            @click="showCopyModal = true"
+            class="flex items-center h-10 px-4 gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-md transition-colors"
+          >
+            <svg
+              class="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+              ></path>
+            </svg>
+            숙제 복사
+          </button>
+
+          <!-- 숙제 관리로 이동 -->
           <NuxtLink
             to="/todos"
-            class="inline-flex items-center px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white font-medium rounded-md transition-colors"
+            class="flex items-center h-10 px-4 bg-gray-600 hover:bg-gray-700 text-white font-medium rounded-md transition-colors"
           >
             숙제 관리로 이동
           </NuxtLink>
@@ -603,6 +646,110 @@
         </div>
       </div>
     </div>
+
+    <!-- 숙제 복사 모달 -->
+    <div v-if="showCopyModal" class="fixed inset-0 flex items-center justify-center z-50" style="background-color: rgba(0, 0, 0, 0.5);" @click="showCopyModal = false">
+      <div class="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4 shadow-2xl" @click.stop>
+        <!-- 헤더 -->
+        <div class="flex items-center justify-between mb-6">
+          <h3 class="text-xl font-semibold text-gray-900 dark:text-white">
+            숙제 복사하기
+          </h3>
+          <button
+            @click="showCopyModal = false"
+            class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+          >
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- 설명 -->
+        <div class="mb-6">
+          <p class="text-sm text-gray-600 dark:text-gray-400">
+            다른 캐릭터의 숙제를 <strong>{{ selectedCharacter?.name }}</strong>에게 복사합니다.
+          </p>
+        </div>
+
+        <!-- 캐릭터 선택 -->
+        <div class="mb-6">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            복사할 캐릭터 선택
+          </label>
+          <select
+            v-model="selectedSourceCharacter"
+            class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+          >
+            <option value="">캐릭터를 선택하세요</option>
+            <option
+              v-for="character in characters.filter(c => c.id !== selectedCharacter?.id)"
+              :key="character.id"
+              :value="character.id"
+            >
+              {{ character.name }} ({{ character.servers?.name }})
+              <span v-if="character.is_main"> - 메인</span>
+            </option>
+          </select>
+        </div>
+
+        <!-- 선택된 캐릭터의 숙제 미리보기 -->
+        <div v-if="selectedSourceCharacter && sourceCharacterTodos.length > 0" class="mb-6">
+          <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+            복사될 숙제 목록 ({{ sourceCharacterTodos.length }}개)
+          </h4>
+          <div class="max-h-40 overflow-y-auto space-y-2 pr-2">
+            <div
+              v-for="todo in sourceCharacterTodos"
+              :key="todo.id"
+              class="flex items-center space-x-3 p-2 bg-gray-50 dark:bg-gray-700 rounded-lg"
+            >
+              <div class="flex-1">
+                <div class="text-sm font-medium text-gray-900 dark:text-white">{{ todo.title }}</div>
+                <div class="text-xs text-gray-500 dark:text-gray-400">{{ getCycleLabel(todo.repeat_cycle) }}</div>
+              </div>
+              <div class="flex items-center space-x-2">
+                <span v-if="todo.is_shared" class="bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300 px-2 py-1 rounded-full text-xs">
+                  공유
+                </span>
+                <span v-if="isTodoAssigned(todo.todo_id)" class="bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-300 px-2 py-1 rounded-full text-xs">
+                  이미 할당됨
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 복사할 숙제가 없을 때 -->
+        <div v-if="selectedSourceCharacter && sourceCharacterTodos.length === 0" class="mb-6">
+          <div class="text-center py-4">
+            <div class="text-gray-400 dark:text-gray-500 mb-2">
+              <svg class="w-8 h-8 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+              </svg>
+            </div>
+            <p class="text-sm text-gray-600 dark:text-gray-400">복사할 숙제가 없습니다.</p>
+          </div>
+        </div>
+
+        <!-- 하단 버튼 -->
+        <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-600">
+          <button
+            @click="showCopyModal = false"
+            class="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-700 font-medium rounded-lg transition-colors"
+          >
+            취소
+          </button>
+          <button
+            @click="copyTodos"
+            :disabled="!selectedSourceCharacter || sourceCharacterTodos.length === 0 || copying"
+            class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 text-white font-medium rounded-lg transition-colors"
+          >
+            {{ copying ? '복사 중...' : '복사하기' }}
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -683,6 +830,18 @@ interface PendingChange {
 }
 
 const pendingChanges = ref<Map<string, PendingChange>>(new Map())
+
+// 숙제 복사 관련 상태
+const showCopyModal = ref(false)
+const selectedSourceCharacter = ref('')
+const copying = ref(false)
+const sourceCharacterTodos = ref<Array<{
+  id: string
+  todo_id: string
+  title: string
+  repeat_cycle: string
+  is_shared: boolean
+}>>([])
 
 // 계산된 속성들 - 할당된 숙제들만 필터링
 const assignedTodos = computed(() => {
@@ -1156,6 +1315,75 @@ const applyChanges = async () => {
 const openAddTodoModal = () => {
   pendingChanges.value.clear() // 대기 중인 변경사항 초기화
   showAddTodoModal.value = true
+}
+
+// 소스 캐릭터의 숙제 목록 가져오기
+const loadSourceCharacterTodos = async () => {
+  if (!selectedSourceCharacter.value) {
+    sourceCharacterTodos.value = []
+    return
+  }
+
+  try {
+    const response = await $fetch(`/api/characters/${selectedSourceCharacter.value}/todos`, {
+      method: 'GET'
+    })
+
+    if (response.success) {
+      const today = new Date().toISOString().split('T')[0]
+      const todayTodos = (response.todoCharacters || []).filter((tc: any) => tc.completion_date === today)
+      
+      // todo 정보와 함께 매핑
+      const todosWithInfo = todayTodos.map((tc: any) => {
+        const todo = todos.value.find(t => t.id === tc.todo_id)
+        return {
+          id: tc.id,
+          todo_id: tc.todo_id,
+          title: todo?.title || '알 수 없는 숙제',
+          repeat_cycle: todo?.repeat_cycle || 'daily',
+          is_shared: tc.is_shared
+        }
+      })
+      
+      sourceCharacterTodos.value = todosWithInfo
+    }
+  } catch (error) {
+    console.error('Error loading source character todos:', error)
+    sourceCharacterTodos.value = []
+  }
+}
+
+// 소스 캐릭터 선택 변경 감지
+watch(selectedSourceCharacter, () => {
+  loadSourceCharacterTodos()
+})
+
+// 숙제 복사 실행
+const copyTodos = async () => {
+  if (!selectedCharacter.value || !selectedSourceCharacter.value || copying.value) return
+
+  copying.value = true
+  try {
+    const response = await $fetch(`/api/characters/${selectedCharacter.value.id}/copy-todos`, {
+      method: 'POST',
+      body: {
+        sourceCharacterId: selectedSourceCharacter.value
+      }
+    })
+
+    if (response.success) {
+      await loadTodoCharacters()
+      showCopyModal.value = false
+      selectedSourceCharacter.value = ''
+      sourceCharacterTodos.value = []
+      alert(response.message || '숙제가 성공적으로 복사되었습니다.')
+    }
+  } catch (error: any) {
+    console.error('Error copying todos:', error)
+    alert(error.data?.statusMessage || '숙제 복사에 실패했습니다.')
+  } finally {
+    copying.value = false
+  }
 }
 
 // URL 쿼리 파라미터에서 캐릭터 ID 가져오기
