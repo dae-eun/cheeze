@@ -421,7 +421,7 @@
               <option value="">모든 주기</option>
               <option value="daily">일간</option>
               <option value="weekly">주간</option>
-                              <option value="월간">월간</option>
+                              <option value="weekend">주말</option>
             </select>
           </div>
         </div>
@@ -514,7 +514,7 @@ interface Todo {
   updated_at: string
   created_by: string
   is_admin_todo: boolean
-  repeat_cycle: '없음' | '일간' | '주간' | '월간'
+  repeat_cycle: 'daily' | 'weekly' | 'weekend'
   progress_type: 'dungeon' | 'quest' | 'purchase' | 'exchange' | 'other'
   target_count?: number
 }
@@ -584,9 +584,9 @@ const assignedTodos = computed(() => {
   return todos.value.filter(todo => assignedTodoIds.includes(todo.id))
 })
 
-const assignedDailyTodos = computed(() => assignedTodos.value.filter(todo => todo.repeat_cycle === '일간'))
-const assignedWeeklyTodos = computed(() => assignedTodos.value.filter(todo => todo.repeat_cycle === '주간'))
-const assignedMonthlyTodos = computed(() => assignedTodos.value.filter(todo => todo.repeat_cycle === '월간'))
+const assignedDailyTodos = computed(() => assignedTodos.value.filter(todo => todo.repeat_cycle === 'daily'))
+const assignedWeeklyTodos = computed(() => assignedTodos.value.filter(todo => todo.repeat_cycle === 'weekly'))
+const assignedMonthlyTodos = computed(() => assignedTodos.value.filter(todo => todo.repeat_cycle === 'weekend'))
 
 const assignedCount = computed(() => todoCharacters.value.filter(tc => {
   const today = new Date().toISOString().split('T')[0]
@@ -652,7 +652,7 @@ const calculateProgressByCycle = (cycle: string) => {
 // 일간/주간/주말 진행현황
 const dailyProgress = computed(() => calculateProgressByCycle('daily'))
 const weeklyProgress = computed(() => calculateProgressByCycle('weekly'))
-const monthlyProgress = computed(() => calculateProgressByCycle('월간'))
+const monthlyProgress = computed(() => calculateProgressByCycle('weekend'))
 
 // 필터링된 숙제 목록 (모달용)
 const filteredTodos = computed(() => {

@@ -54,11 +54,7 @@
               <div class="flex items-center space-x-3">
                 <h3 class="text-sm font-medium text-gray-900 dark:text-white">{{ todo.title }}</h3>
                 <span
-                  :class="{
-                    'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200': todo.repeat_cycle === '일간',
-                    'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200': todo.repeat_cycle === '주간',
-                    'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200': todo.repeat_cycle === '월간'
-                  }"
+                  :class="getRepeatCycleClass(todo)"
                   class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
                 >
                   {{ getRepeatCycleText(todo.repeat_cycle) }}
@@ -193,9 +189,9 @@
                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
                 >
                   <option value="">반복 주기를 선택하세요</option>
-                  <option value="일간">일간</option>
-                  <option value="주간">주간</option>
-                  <option value="월간">월간</option>
+                  <option value="daily">일간</option>
+                  <option value="weekly">주간</option>
+                  <option value="weekend">월간</option>
                 </select>
               </div>
 
@@ -263,7 +259,7 @@ interface Todo {
   id: string
   title: string
   description?: string
-  repeat_cycle: '없음' | '일간' | '주간' | '월간'
+  repeat_cycle: 'daily' | 'weekly' | 'weekend'
   progress_type: 'dungeon' | 'quest' | 'purchase' | 'exchange' | 'other'
   target_count?: number
   is_admin_todo: boolean
@@ -276,7 +272,7 @@ interface Todo {
 interface TodoForm {
   title: string
   description: string
-  repeat_cycle: '없음' | '일간' | '주간' | '월간' | ''
+  repeat_cycle: 'daily' | 'weekly' | 'weekend' | ''
   progress_type: 'dungeon' | 'quest' | 'purchase' | 'exchange' | 'other' | ''
   target_count: number
 }
@@ -349,7 +345,7 @@ const addTodo = async () => {
       id: `temp-${Date.now()}`, // 임시 ID
       title: formData.title,
       description: formData.description,
-      repeat_cycle: formData.repeat_cycle as '없음' | '일간' | '주간' | '월간',
+      repeat_cycle: formData.repeat_cycle as 'daily' | 'weekly' | 'weekend',
       progress_type: formData.progress_type as 'dungeon' | 'quest' | 'purchase' | 'exchange' | 'other',
       is_admin_todo: false,
       organization_id: userStore.user?.organization_id,
@@ -414,7 +410,7 @@ const updateTodo = async () => {
       ...editingTodo.value,
       title: formData.title,
       description: formData.description,
-      repeat_cycle: formData.repeat_cycle as '없음' | '일간' | '주간' | '월간',
+      repeat_cycle: formData.repeat_cycle as 'daily' | 'weekly' | 'weekend',
              progress_type: formData.progress_type as 'dungeon' | 'quest' | 'purchase' | 'exchange' | 'other',
       updated_at: new Date().toISOString()
     }
@@ -581,12 +577,20 @@ const closeModal = () => {
 // 반복 주기 텍스트 변환
 const getRepeatCycleText = (cycle: string) => {
   const cycleMap: Record<string, string> = {
-    '일간': '일간',
-    '주간': '주간',
-    '월간': '월간',
-    '없음': '없음'
+    'daily': '일간',
+    'weekly': '주간',
+    'weekend': '월간'
   }
   return cycleMap[cycle] || cycle
+}
+
+// 반복 주기별 배경색 클래스
+const getRepeatCycleClass = (todo: Todo) => {
+  return {
+    'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200': todo.repeat_cycle === 'daily',
+    'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200': todo.repeat_cycle === 'weekly',
+    'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200': todo.repeat_cycle === 'weekend'
+  }
 }
 
 // 진행 종류 텍스트 변환

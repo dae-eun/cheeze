@@ -5,8 +5,9 @@ interface Todo {
   id: string
   title: string
   description?: string
-  repeat_cycle: '없음' | '일간' | '주간' | '월간'
-  progress_type: 'dungeon' | 'quest' | 'purchase' | 'other'
+  repeat_cycle: 'daily' | 'weekly' | 'weekend'
+  progress_type: 'dungeon' | 'quest' | 'purchase' | 'exchange' | 'other'
+  target_count?: number
   is_admin_todo: boolean
   organization_id?: string
   created_by: string

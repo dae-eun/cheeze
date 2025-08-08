@@ -119,11 +119,10 @@
             v-model="filterRepeatCycle"
             class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:text-white"
           >
-            <option value="">모든 반복 주기</option>
-            <option value="없음">없음</option>
-            <option value="일간">일간</option>
-            <option value="주간">주간</option>
-            <option value="월간">월간</option>
+            <option value="">반복 주기를 선택하세요</option>
+            <option value="daily">일간</option>
+            <option value="weekly">주간</option>
+            <option value="weekend">주말</option>
           </select>
         </div>
       </div>
@@ -262,9 +261,9 @@
               >
                 <option value="">선택하세요</option>
                 <option value="없음">없음</option>
-                <option value="일간">일간</option>
-                <option value="주간">주간</option>
-                <option value="월간">월간</option>
+                <option value="daily">일간</option>
+                <option value="weekly">주간</option>
+                <option value="weekend">주말</option>
               </select>
             </div>
             <div>

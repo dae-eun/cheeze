@@ -35,7 +35,7 @@ export default defineEventHandler(async (event) => {
     }
 
     // 반복주기 검증
-    if (!repeat_cycle || !['없음', '일간', '주간', '월간'].includes(repeat_cycle)) {
+    if (!repeat_cycle || !['daily', 'weekly', 'weekend'].includes(repeat_cycle)) {
       throw createError({
         statusCode: 400,
         statusMessage: '올바른 반복주기를 선택해주세요.'
