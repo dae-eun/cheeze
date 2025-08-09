@@ -67,7 +67,7 @@ export default defineEventHandler(async (event) => {
     // 오늘 날짜
     const today = new Date().toISOString().split('T')[0]
 
-    // 소스 캐릭터의 숙제 목록 가져오기
+    // 소스 캐릭터의 숙제 목록 가져오기 (모든 기간)
     const { data: sourceTodoCharacters, error: sourceTodoCharactersError } = await supabaseAdmin
       .from('todo_characters')
       .select(`
@@ -76,7 +76,6 @@ export default defineEventHandler(async (event) => {
         is_shared
       `)
       .eq('character_id', sourceCharacterId)
-      .eq('completion_date', today)
 
     if (sourceTodoCharactersError) {
       console.error('Source todo characters fetch error:', sourceTodoCharactersError)
@@ -93,7 +92,12 @@ export default defineEventHandler(async (event) => {
       })
     }
 
-    // 대상 캐릭터의 기존 숙제 확인
+    // 소스 숙제 중복 제거 (todo_id 기준으로 유니크)
+    const uniqueSourceTodoCharacters = Array.from(
+      new Map((sourceTodoCharacters || []).map((tc: any) => [tc.todo_id, tc])).values()
+    ) as Array<{ todo_id: string; target_count: number; is_shared: boolean }>
+
+    // 대상 캐릭터의 기존 숙제 확인 (오늘자만 - 오늘 중복 방지 목적)
     const { data: existingTodoCharacters, error: existingTodoCharactersError } = await supabaseAdmin
       .from('todo_characters')
       .select('todo_id')
@@ -111,7 +115,7 @@ export default defineEventHandler(async (event) => {
     const existingTodoIds = (existingTodoCharacters || []).map(tc => tc.todo_id)
 
     // 복사할 숙제 필터링 (이미 할당된 숙제 제외)
-    const todosToCopy = sourceTodoCharacters.filter(tc => !existingTodoIds.includes(tc.todo_id))
+    const todosToCopy = uniqueSourceTodoCharacters.filter(tc => !existingTodoIds.includes(tc.todo_id))
 
     if (todosToCopy.length === 0) {
       throw createError({

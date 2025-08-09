@@ -1369,7 +1369,7 @@ const applyChanges = async () => {
           // 할당
           console.log(`POST 요청: is_shared = ${change.isShared}`)
           promises.push(
-            $fetch(`/api/todos/${todoId}/characters/${selectedCharacter.value!.id}`, {
+            $fetch<any>(`/api/todos/${todoId}/characters/${selectedCharacter.value!.id}` as any, {
               method: 'POST',
               body: {
                 is_shared: change.isShared
@@ -1379,7 +1379,7 @@ const applyChanges = async () => {
         } else {
           // 해제
           promises.push(
-            $fetch(`/api/todos/${todoId}/characters/${selectedCharacter.value!.id}`, {
+            $fetch<any>(`/api/todos/${todoId}/characters/${selectedCharacter.value!.id}` as any, {
               method: 'DELETE'
             }) as Promise<any>
           )
@@ -1388,7 +1388,7 @@ const applyChanges = async () => {
         // 할당 상태는 유지하지만 공유 설정만 변경
         console.log(`PUT 요청: is_shared = ${change.isShared}`)
         promises.push(
-          $fetch(`/api/todos/${todoId}/characters/${selectedCharacter.value!.id}`, {
+          $fetch<any>(`/api/todos/${todoId}/characters/${selectedCharacter.value!.id}` as any, {
             method: 'PUT',
             body: {
               is_shared: change.isShared
@@ -1436,21 +1436,25 @@ const loadSourceCharacterTodos = async () => {
     })
 
     if (response.success) {
-      const today = new Date().toISOString().split('T')[0]
-      const todayTodos = (response.todoCharacters || []).filter((tc: any) => tc.completion_date === today)
-      
+      const allTodoCharacters = (response.todoCharacters || []) as Array<any>
+
+      // todo_id 기준으로 유니크 처리 (가장 먼저 등장한 항목 기준)
+      const uniqueTodoCharacters = Array.from(
+        new Map(allTodoCharacters.map((tc: any) => [tc.todo_id, tc])).values()
+      )
+
       // todo 정보와 함께 매핑
-      const todosWithInfo = todayTodos.map((tc: any) => {
+      const todosWithInfo = uniqueTodoCharacters.map((tc: any) => {
         const todo = todos.value.find(t => t.id === tc.todo_id)
         return {
-          id: tc.id,
+          id: tc.todo_id, // 목록 키를 todo_id로 통일
           todo_id: tc.todo_id,
           title: todo?.title || '알 수 없는 숙제',
-          repeat_cycle: todo?.repeat_cycle || 'daily',
-          is_shared: tc.is_shared
+          repeat_cycle: (todo?.repeat_cycle as string) || 'daily',
+          is_shared: !!tc.is_shared
         }
       })
-      
+
       sourceCharacterTodos.value = todosWithInfo
     }
   } catch (error) {
