@@ -313,7 +313,7 @@ const mainCharacter = ref<{ name: string } | null>(null)
 const userMenuOpen = ref(false)
 
 // 다크모드 상태
-const isDarkMode = ref(false)
+const isDarkMode = ref(true)
 
 
 
@@ -321,10 +321,8 @@ const isDarkMode = ref(false)
 const initializeDarkMode = () => {
   if (process.client) {
     const savedDarkMode = localStorage.getItem('darkMode')
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-    
-    // 저장된 설정이 있으면 사용, 없으면 시스템 설정 사용
-    isDarkMode.value = savedDarkMode !== null ? savedDarkMode === 'true' : prefersDark
+    // 저장된 설정이 없으면 기본값 다크
+    isDarkMode.value = savedDarkMode !== null ? savedDarkMode === 'true' : true
     applyDarkMode()
   }
 }
