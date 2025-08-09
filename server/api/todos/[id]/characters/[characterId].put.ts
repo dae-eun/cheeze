@@ -50,27 +50,39 @@ export default defineEventHandler(async (event) => {
     // 오늘 날짜
     const today = new Date().toISOString().split('T')[0]
 
+    // target_count는 트리거에서 처리하므로 별도 조회 불필요
+
     // 기존 매핑이 있는지 확인
     const { data: existingMapping, error: existingError } = await supabaseAdmin
       .from('todo_characters')
-      .select('id, is_completed')
+      .select('id, is_completed, is_shared, current_count')
       .eq('todo_id', todoId)
       .eq('character_id', characterId)
       .eq('completion_date', today)
       .single()
 
     if (existingMapping) {
-      // 요청 본문에서 is_shared 값 가져오기 (이미 위에서 읽었음)
+      // 요청 본문에서 is_shared 값 가져오기 (기존 값 유지하거나 새 값 사용)
       const isShared = is_shared !== undefined ? is_shared : existingMapping.is_shared
 
       // 기존 매핑 업데이트
+      const updateData: any = {
+        is_completed: is_completed,
+        completed_at: is_completed ? new Date().toISOString() : null,
+        is_shared: isShared
+      }
+
+      // 완료 상태 변경 시 current_count 설정
+      if (is_completed === false) {
+        updateData.current_count = 0  // 되돌리기 시 0으로 초기화
+      }
+      // 완료 시 current_count는 트리거에서 적절히 처리됨
+
+      // 카운트 기반 자동 완료는 데이터베이스 트리거에서 처리
+
       const { data: updatedMapping, error: updateError } = await supabaseAdmin
         .from('todo_characters')
-        .update({
-          is_completed: is_completed,
-          completed_at: is_completed ? new Date().toISOString() : null,
-          is_shared: isShared
-        })
+        .update(updateData)
         .eq('id', existingMapping.id)
         .select()
         .single()
@@ -88,25 +100,36 @@ export default defineEventHandler(async (event) => {
         todoCharacter: updatedMapping
       }
     } else {
-      // 요청 본문에서 is_shared 값 가져오기 (이미 위에서 읽었음)
-      const isShared = is_shared || false
+      // 요청 본문에서 is_shared 값 가져오기 (기본값 false)
+      const isShared = is_shared !== undefined ? is_shared : false
 
       // 새로운 매핑 생성
-      const { data: newMapping, error: createError } = await supabaseAdmin
+      let currentCount = 0
+      if (is_completed === false) {
+        currentCount = 0  // 미완료 시 0
+      }
+      // 완료 시 current_count는 트리거에서 적절히 처리됨
+
+      const insertData: any = {
+        todo_id: todoId,
+        character_id: characterId,
+        is_completed: is_completed,
+        completed_at: is_completed ? new Date().toISOString() : null,
+        completion_date: today,
+        is_shared: isShared,
+        current_count: currentCount
+      }
+
+      // 카운트 기반 자동 완료는 데이터베이스 트리거에서 처리
+
+      const { data: newMapping, error: insertError } = await supabaseAdmin
         .from('todo_characters')
-        .insert({
-          todo_id: todoId,
-          character_id: characterId,
-          is_completed: is_completed,
-          completed_at: is_completed ? new Date().toISOString() : null,
-          completion_date: today,
-          is_shared: isShared
-        })
+        .insert(insertData)
         .select()
         .single()
 
-      if (createError) {
-        console.error('Todo character creation error:', createError)
+      if (insertError) {
+        console.error('Todo character creation error:', insertError)
         throw createError({
           statusCode: 500,
           statusMessage: '숙제 상태 생성에 실패했습니다.'
