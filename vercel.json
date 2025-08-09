@@ -2,7 +2,7 @@
   "crons": [
     {
       "path": "/api/cron/reset-todos",
-      "schedule": "45 3 * * *"
+      "schedule": "* 21 * * *"
     }
   ],
   "installCommand": "bun install"
