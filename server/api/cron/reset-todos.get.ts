@@ -18,22 +18,24 @@ export default defineEventHandler(async (event): Promise<CronResponse> => {
   const requestId = `${startTime}-${Math.random().toString(36).slice(2, 8)}`
 
   try {
-    // Vercel Cron Jobs에서 호출된 경우 x-vercel-cron 헤더가 포함됨
-    const isVercelCron = event.headers.get('x-vercel-cron') === '1'
+    const headers = event.headers
+    const userAgent = (headers.get('user-agent') || '').toLowerCase()
 
-    // 수동 GET 호출 시 쿼리의 secret 체크
-    if (!isVercelCron) {
-      const query = getQuery(event)
-      const secret = query.secret as string | undefined
-      if (secret !== config.cronSecret) {
-        throw createError({
-          statusCode: 401,
-          statusMessage: '인증 실패'
-        })
-      }
+    const query = getQuery(event)
+    const secret = (query.secret as string | undefined) || undefined
+
+    const isVercelCron = userAgent.startsWith('vercel-cron/')
+    const isSecretParamValid = !!secret && secret === config.cronSecret
+    const isAuthorized = isVercelCron || isSecretParamValid
+
+    if (!isAuthorized) {
+      throw createError({ statusCode: 401, message: '인증 실패' })
     }
 
-    console.log('🕕 Starting todo reset cron job (GET)...', { requestId, source: isVercelCron ? 'vercel' : 'manual' })
+    console.log('🕕 Starting todo reset cron job (GET)...', {
+      requestId,
+      source: isVercelCron ? 'vercel' : (isSecretParamValid ? 'manual' : 'unknown')
+    })
 
     // 시작 로그 저장
     await supabaseAdmin.from('cron_logs').insert({
@@ -71,7 +73,7 @@ export default defineEventHandler(async (event): Promise<CronResponse> => {
       console.error('❌ Todo reset failed after all retries:', result.error)
       throw createError({
         statusCode: 500,
-        statusMessage: `숙제 갱신에 실패했습니다. (${result.attempts} attempts)`
+        message: `숙제 갱신에 실패했습니다. (${result.attempts} attempts)`
       })
     }
 
