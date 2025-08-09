@@ -51,10 +51,10 @@ export default defineEventHandler(async (event) => {
       })
     }
 
-    // 숙제가 존재하는지 확인
+    // 숙제 정보 조회 (주기 확인용)
     const { data: todo, error: todoError } = await supabaseAdmin
       .from('todos')
-      .select('id')
+      .select('id, repeat_cycle')
       .eq('id', todoId)
       .single()
 
@@ -65,14 +65,36 @@ export default defineEventHandler(async (event) => {
       })
     }
 
-    // 오늘 날짜의 숙제-캐릭터 매핑 삭제
+    // 오늘 날짜
     const today = new Date().toISOString().split('T')[0]
-    const { error: deleteError } = await supabaseAdmin
+
+    // 삭제 쿼리 구성
+    let deleteQuery = supabaseAdmin
       .from('todo_characters')
       .delete()
       .eq('todo_id', todoId)
       .eq('character_id', characterId)
-      .eq('completion_date', today)
+
+    // 주간 숙제의 경우 현재 주 전체에서 삭제
+    if (todo.repeat_cycle === 'weekly') {
+      const currentDate = new Date()
+      const startOfWeek = new Date(currentDate)
+      startOfWeek.setDate(currentDate.getDate() - currentDate.getDay()) // 일요일
+      const endOfWeek = new Date(startOfWeek)
+      endOfWeek.setDate(startOfWeek.getDate() + 6) // 토요일
+
+      const startOfWeekStr = startOfWeek.toISOString().split('T')[0]
+      const endOfWeekStr = endOfWeek.toISOString().split('T')[0]
+
+      deleteQuery = deleteQuery
+        .gte('completion_date', startOfWeekStr)
+        .lte('completion_date', endOfWeekStr)
+    } else {
+      // 일간/주말 숙제는 오늘 날짜로만 삭제
+      deleteQuery = deleteQuery.eq('completion_date', today)
+    }
+
+    const { error: deleteError } = await deleteQuery
 
     if (deleteError) {
       console.error('Delete todo character error:', deleteError)

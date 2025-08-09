@@ -50,16 +50,60 @@ export default defineEventHandler(async (event) => {
     // 오늘 날짜
     const today = new Date().toISOString().split('T')[0]
 
-    // target_count는 트리거에서 처리하므로 별도 조회 불필요
+    // 숙제 정보 조회 (주기 확인용)
+    const { data: todoInfo, error: todoInfoError } = await supabaseAdmin
+      .from('todos')
+      .select('repeat_cycle')
+      .eq('id', todoId)
+      .single()
 
-    // 기존 매핑이 있는지 확인
-    const { data: existingMapping, error: existingError } = await supabaseAdmin
+    if (todoInfoError || !todoInfo) {
+      throw createError({
+        statusCode: 404,
+        statusMessage: '숙제를 찾을 수 없습니다.'
+      })
+    }
+
+    // 기존 매핑 검색 쿼리 구성
+    let query = supabaseAdmin
       .from('todo_characters')
-      .select('id, is_completed, is_shared, current_count')
+      .select('id, is_completed, is_shared, current_count, completion_date')
       .eq('todo_id', todoId)
       .eq('character_id', characterId)
-      .eq('completion_date', today)
-      .single()
+
+    // 주간 숙제의 경우 현재 주 전체에서 검색
+    if (todoInfo.repeat_cycle === 'weekly') {
+      const currentDate = new Date()
+      const startOfWeek = new Date(currentDate)
+      startOfWeek.setDate(currentDate.getDate() - currentDate.getDay()) // 일요일
+      const endOfWeek = new Date(startOfWeek)
+      endOfWeek.setDate(startOfWeek.getDate() + 6) // 토요일
+
+      const startOfWeekStr = startOfWeek.toISOString().split('T')[0]
+      const endOfWeekStr = endOfWeek.toISOString().split('T')[0]
+
+      query = query
+        .gte('completion_date', startOfWeekStr)
+        .lte('completion_date', endOfWeekStr)
+    } else {
+      // 일간/주말 숙제는 오늘 날짜로만 검색
+      query = query.eq('completion_date', today)
+    }
+
+    const { data: existingMappings, error: existingError } = await query
+
+    if (existingError) {
+      console.error('Existing mapping search error:', existingError)
+      throw createError({
+        statusCode: 500,
+        statusMessage: '기존 숙제 매핑 조회에 실패했습니다.'
+      })
+    }
+
+    // 주간 숙제의 경우 여러 레코드가 있을 수 있으므로 가장 최근 것을 선택
+    const existingMapping = existingMappings && existingMappings.length > 0 
+      ? existingMappings.sort((a, b) => new Date(b.completion_date).getTime() - new Date(a.completion_date).getTime())[0]
+      : null
 
     if (existingMapping) {
       // 요청 본문에서 is_shared 값 가져오기 (기존 값 유지하거나 새 값 사용)
@@ -110,12 +154,15 @@ export default defineEventHandler(async (event) => {
       }
       // 완료 시 current_count는 트리거에서 적절히 처리됨
 
+      // completion_date 설정: 주간 숙제는 오늘 날짜, 일간/주말은 오늘 날짜
+      let completionDate = today
+      
       const insertData: any = {
         todo_id: todoId,
         character_id: characterId,
         is_completed: is_completed,
         completed_at: is_completed ? new Date().toISOString() : null,
-        completion_date: today,
+        completion_date: completionDate,
         is_shared: isShared,
         current_count: currentCount
       }

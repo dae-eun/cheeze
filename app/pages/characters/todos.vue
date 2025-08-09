@@ -636,11 +636,27 @@
         </div>
 
         <!-- 하단 버튼 -->
-        <div class="mt-6 flex justify-between items-center pt-4 border-t border-gray-200 dark:border-gray-600">
+        <div class="mt-6 flex flex-col sm:flex-row justify-between items-center pt-4 border-t border-gray-200 dark:border-gray-600 gap-4">
           <div class="text-sm text-gray-600 dark:text-gray-400">
             {{ pendingChanges.size }}개 변경사항 대기 중
           </div>
-          <div class="flex space-x-3">
+          <div class="flex flex-wrap gap-2 sm:gap-3">
+            <!-- 모두할당하기/모두해제하기 버튼 -->
+            <button
+              @click="selectAllTodos"
+              :disabled="filteredTodos.length === 0"
+              class="px-3 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-medium rounded-lg transition-colors"
+            >
+              모두할당하기
+            </button>
+            <button
+              @click="unselectAllTodos"
+              :disabled="filteredTodos.length === 0"
+              class="px-3 py-2 bg-orange-600 hover:bg-orange-700 disabled:bg-gray-400 text-white font-medium rounded-lg transition-colors"
+            >
+              모두해제하기
+            </button>
+            <!-- 기존 버튼들 -->
             <button
               @click="showAddTodoModal = false"
               class="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-700 font-medium rounded-lg transition-colors"
@@ -1308,6 +1324,26 @@ const getShareWithGuildState = (todoId: string) => {
   const result = todoCharacter?.is_shared ?? false
   console.log(`getShareWithGuildState(${todoId}): todoCharacter?.is_shared = ${todoCharacter?.is_shared}, result = ${result}`)
   return result
+}
+
+// 모두할당하기
+const selectAllTodos = () => {
+  for (const todo of filteredTodos.value) {
+    pendingChanges.value.set(todo.id, {
+      isAssigned: true,
+      isShared: false
+    })
+  }
+}
+
+// 모두해제하기
+const unselectAllTodos = () => {
+  for (const todo of filteredTodos.value) {
+    pendingChanges.value.set(todo.id, {
+      isAssigned: false,
+      isShared: false
+    })
+  }
 }
 
 // 변경사항 적용하기
