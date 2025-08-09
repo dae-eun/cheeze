@@ -7,7 +7,7 @@ const CRON_ENDPOINT = process.env.VERCEL_URL
   : 'http://localhost:3000/api/cron/reset-todos'
 
 // 매일 새벽 6시에 실행
-cron('*/5 * * * *', async () => {
+cron('0 6 * * *', async () => {
   console.log('🕕 Running daily todo reset...')
   
   try {
