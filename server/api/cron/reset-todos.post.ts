@@ -15,6 +15,7 @@ interface CronResponse {
 
 export default defineEventHandler(async (event): Promise<CronResponse> => {
   const startTime = Date.now()
+  const requestId = `${startTime}-${Math.random().toString(36).slice(2, 8)}`
   
   try {
     // Vercel Cron Jobs는 자동으로 인증됨
@@ -32,7 +33,14 @@ export default defineEventHandler(async (event): Promise<CronResponse> => {
       })
     }
 
-    console.log('🕕 Starting todo reset cron job...')
+    console.log('🕕 Starting todo reset cron job...', { requestId, source: isVercelCron ? 'vercel' : 'manual' })
+
+    // 시작 로그 저장
+    await supabaseAdmin.from('cron_logs').insert({
+      job_name: 'reset_todos_by_cycle',
+      status: 'started',
+      message: `Cron triggered (${isVercelCron ? 'vercel' : 'manual'}) [${requestId}]`
+    })
 
     // 재시도 로직을 포함한 자동 갱신 함수 실행
     const result = await retrySupabaseRPC(
@@ -52,7 +60,9 @@ export default defineEventHandler(async (event): Promise<CronResponse> => {
     await supabaseAdmin.from('cron_logs').insert({
       job_name: 'reset_todos_by_cycle',
       status: result.success ? 'success' : 'failed',
-      message: result.success ? 'Todo reset completed successfully' : `Todo reset failed: ${result.error?.message}`,
+      message: result.success
+        ? `Todo reset completed successfully [${requestId}]`
+        : `Todo reset failed: ${result.error?.message} [${requestId}]`,
       attempts: result.attempts,
       total_time_ms: result.totalTimeMs,
       error_details: result.error?.message || null
