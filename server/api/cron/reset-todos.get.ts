@@ -37,12 +37,6 @@ export default defineEventHandler(async (event): Promise<CronResponse> => {
       source: isVercelCron ? 'vercel' : (isSecretParamValid ? 'manual' : 'unknown')
     })
 
-    // 시작 로그 저장
-    await supabaseAdmin.from('cron_logs').insert({
-      job_name: 'reset_todos_by_cycle',
-      status: 'started',
-      message: `Cron triggered (${isVercelCron ? 'vercel' : 'manual'}) [${requestId}]`
-    })
 
     const result = await retrySupabaseRPC(
       async () => {
