@@ -128,8 +128,9 @@
                       class="w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
                     />
 
-                    <!-- 반복횟수 증가 버튼 또는 완료 체크 -->
-                    <div v-if="getTodoTargetCount(todo.id) > 1" class="flex items-center justify-center w-10 h-10">
+                    <!-- 반복횟수 증가 버튼 + 즉시 완료 체크박스 -->
+                    <div v-if="getTodoTargetCount(todo.id) > 1" class="flex items-center space-x-3">
+                      <div class="flex items-center justify-center w-10 h-10">
                       <button
                         v-if="!isTodoCompleted(todo.id)"
                         @click="incrementTodoCount(todo.id)"
@@ -145,6 +146,15 @@
                           <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
                         </svg>
                       </div>
+                      </div>
+                      <!-- 즉시 완료 체크박스 -->
+                      <input
+                        type="checkbox"
+                        :checked="false"
+                        @change="toggleTodo(todo.id, true)"
+                        class="w-5 h-5 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500 dark:focus:ring-green-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                        title="완료 처리"
+                      />
                     </div>
 
                     <!-- 삭제 버튼 -->
@@ -224,8 +234,9 @@
                       class="w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
                     />
 
-                    <!-- 반복횟수 증가 버튼 또는 완료 체크 -->
-                    <div v-if="getTodoTargetCount(todo.id) > 1" class="flex items-center justify-center w-10 h-10">
+                    <!-- 반복횟수 증가 버튼 + 즉시 완료 체크박스 -->
+                    <div v-if="getTodoTargetCount(todo.id) > 1" class="flex items-center space-x-3">
+                      <div class="flex items-center justify-center w-10 h-10">
                       <button
                         v-if="!isTodoCompleted(todo.id)"
                         @click="incrementTodoCount(todo.id)"
@@ -241,6 +252,15 @@
                           <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
                         </svg>
                       </div>
+                      </div>
+                      <!-- 즉시 완료 체크박스 -->
+                      <input
+                        type="checkbox"
+                        :checked="false"
+                        @change="toggleTodo(todo.id, true)"
+                        class="w-5 h-5 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500 dark:focus:ring-green-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                        title="완료 처리"
+                      />
                     </div>
 
                     <!-- 삭제 버튼 -->
@@ -320,8 +340,9 @@
                       class="w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
                     />
 
-                    <!-- 반복횟수 증가 버튼 또는 완료 체크 -->
-                    <div v-if="getTodoTargetCount(todo.id) > 1" class="flex items-center justify-center w-10 h-10">
+                    <!-- 반복횟수 증가 버튼 + 즉시 완료 체크박스 -->
+                    <div v-if="getTodoTargetCount(todo.id) > 1" class="flex items-center space-x-3">
+                      <div class="flex items-center justify-center w-10 h-10">
                       <button
                         v-if="!isTodoCompleted(todo.id)"
                         @click="incrementTodoCount(todo.id)"
@@ -337,6 +358,15 @@
                           <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
                         </svg>
                       </div>
+                      </div>
+                      <!-- 즉시 완료 체크박스 -->
+                      <input
+                        type="checkbox"
+                        :checked="false"
+                        @change="toggleTodo(todo.id, true)"
+                        class="w-5 h-5 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500 dark:focus:ring-green-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                        title="완료 처리"
+                      />
                     </div>
 
                     <!-- 삭제 버튼 -->
