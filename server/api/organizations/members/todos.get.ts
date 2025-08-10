@@ -69,11 +69,49 @@ export default defineEventHandler(async (event) => {
       })
     }
 
-    // 오늘 날짜
+    // 날짜 쿼리 처리: ?date=YYYY-MM-DD | today | all
+    const query = getQuery(event) as Record<string, string | string[]>
+    const dateQueryParam = typeof query.date === 'string' ? query.date : undefined
+
     const today = new Date().toISOString().split('T')[0]
 
     // 조직원들의 공유된 숙제 현황 가져오기
-    const { data: sharedTodos, error: todosError } = await supabaseAdmin
+    interface JoinedTodoRow {
+      id: string
+      title: string
+      description: string | null
+      repeat_cycle: 'daily' | 'weekly' | 'weekend' | null
+      progress_type: 'dungeon' | 'quest' | 'purchase' | 'exchange' | 'other' | null
+      target_count: number | null
+    }
+
+    interface JoinedCharacterRow {
+      id: string
+      name: string
+      server_id: string
+      is_main: boolean
+      servers?: { name: string } | null
+      // users 관계는 사용하지 않으므로 any 처리
+      users?: any
+    }
+
+    interface JoinedTodoCharacterRow {
+      id: string
+      todo_id: string
+      character_id: string
+      is_completed: boolean
+      completed_at: string | null
+      completion_date: string | null
+      current_count: number
+      target_count: number
+      is_shared: boolean
+      created_at: string
+      updated_at: string
+      todos?: JoinedTodoRow | null
+      characters?: JoinedCharacterRow | null
+    }
+
+    let todosQuery = supabaseAdmin
       .from('todo_characters')
       .select(`
         id,
@@ -108,7 +146,20 @@ export default defineEventHandler(async (event) => {
         )
       `)
       .eq('is_shared', true)
-      .eq('completion_date', today)
+
+    // 기본값: 모든 날짜에서 최신 상태를 보여주기 위해 날짜 필터 미적용
+    if (dateQueryParam === 'today') {
+      todosQuery = todosQuery.eq('completion_date', today)
+    } else if (dateQueryParam && dateQueryParam !== 'all') {
+      todosQuery = todosQuery.eq('completion_date', dateQueryParam)
+    }
+
+    // 최신 상태 우선 정렬 (날짜 -> 업데이트 시간)
+    todosQuery = todosQuery
+      .order('completion_date', { ascending: false, nullsFirst: false })
+      .order('updated_at', { ascending: false, nullsFirst: false })
+
+    const { data: rawSharedTodos, error: todosError } = await todosQuery as unknown as { data: JoinedTodoCharacterRow[] | null, error: any }
 
     if (todosError) {
       console.error('Shared todos fetch error:', todosError)
@@ -117,6 +168,23 @@ export default defineEventHandler(async (event) => {
         statusMessage: '공유 숙제 정보를 가져올 수 없습니다.'
       })
     }
+
+    // 날짜 필터가 없는 경우(모든 날짜)에는 (character_id, todo_id) 기준으로 최신 1개만 사용
+    const isAllDates = !dateQueryParam || dateQueryParam === 'all'
+    const sharedTodos: JoinedTodoCharacterRow[] = (() => {
+      if (!rawSharedTodos || rawSharedTodos.length === 0) return []
+      if (!isAllDates) return rawSharedTodos
+      const seen = new Set<string>()
+      const deduped: JoinedTodoCharacterRow[] = []
+      for (const row of rawSharedTodos) {
+        const key = `${row.character_id}:${row.todo_id}`
+        if (!seen.has(key)) {
+          seen.add(key)
+          deduped.push(row)
+        }
+      }
+      return deduped
+    })()
 
     // 조직원별로 데이터 정리
     const memberStats = organizationMembers?.map(member => {
@@ -180,7 +248,8 @@ export default defineEventHandler(async (event) => {
     return {
       success: true,
       organizationMembers: memberStats,
-      sharedTodos: sharedTodos || []
+      sharedTodos: sharedTodos || [],
+      date: dateQueryParam || 'all'
     }
 
   } catch (error) {

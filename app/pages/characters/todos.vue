@@ -818,6 +818,7 @@ interface TodoCharacter {
   current_count: number
   target_count: number
   is_shared: boolean
+  updated_at?: string
 }
 
 interface User {
@@ -871,13 +872,29 @@ const sourceCharacterTodos = ref<Array<{
   is_shared: boolean
 }>>([])
 
-// 계산된 속성들 - 할당된 숙제들만 필터링
+// 최신 레코드 선별: 같은 todo_id 중 가장 최근(completion_date DESC, updated_at DESC)
+const getLatestTodoCharacterMap = (rows: TodoCharacter[]) => {
+  const sorted = [...rows].sort((a, b) => {
+    const dateA = a.completion_date || ''
+    const dateB = b.completion_date || ''
+    if (dateA !== dateB) return dateA > dateB ? -1 : 1
+    const updatedA = a.updated_at || ''
+    const updatedB = b.updated_at || ''
+    return updatedA > updatedB ? -1 : updatedA < updatedB ? 1 : 0
+  })
+  const map = new Map<string, TodoCharacter>()
+  for (const row of sorted) {
+    if (!map.has(row.todo_id)) {
+      map.set(row.todo_id, row)
+    }
+  }
+  return map
+}
+
+// 계산된 속성들 - 할당된 숙제들만 필터링(최신 레코드 기준)
 const assignedTodos = computed(() => {
-  // const today = new Date().toISOString().split('T')[0]  // 오늘 날짜 필터 제거
-  const assignedTodoIds = todoCharacters.value
-    // .filter(tc => tc.completion_date === today)  // 이 필터 제거
-    .map(tc => tc.todo_id)
-  
+  const latestMap = getLatestTodoCharacterMap(todoCharacters.value)
+  const assignedTodoIds = Array.from(latestMap.keys())
   return todos.value.filter(todo => assignedTodoIds.includes(todo.id))
 })
 
@@ -920,15 +937,15 @@ const completedTodos = computed(() => {
   return assignedTodos.value.filter(todo => isTodoCompleted(todo.id))
 })
 
-const assignedCount = computed(() => todoCharacters.value.filter(tc => {
-  const today = new Date().toISOString().split('T')[0]
-  return tc.completion_date === today
-}).length)
+const assignedCount = computed(() => {
+  const latestMap = getLatestTodoCharacterMap(todoCharacters.value)
+  return latestMap.size
+})
 
-const completedCount = computed(() => todoCharacters.value.filter(tc => {
-  const today = new Date().toISOString().split('T')[0]
-  return tc.is_completed && tc.completion_date === today
-}).length)
+const completedCount = computed(() => {
+  const latestMap = getLatestTodoCharacterMap(todoCharacters.value)
+  return Array.from(latestMap.values()).filter(tc => tc.is_completed).length
+})
 
 const completionRate = computed(() => 
   assignedCount.value > 0 ? Math.round((completedCount.value / assignedCount.value) * 100) : 0
@@ -941,44 +958,28 @@ const isSystemUser = computed(() => {
 
 // 진행현황 계산 함수
 const calculateProgressByCycle = (cycle: string) => {
-  const today = new Date().toISOString().split('T')[0]
-  
-  // 해당 주기의 숙제들
+  const latestMap = getLatestTodoCharacterMap(todoCharacters.value)
   const cycleTodos = assignedTodos.value.filter(todo => todo.repeat_cycle === cycle)
-  const cycleTodoIds = cycleTodos.map(todo => todo.id)
-  
-  // 오늘 날짜의 해당 주기 숙제들
-  const todayCycleTodos = todoCharacters.value.filter(tc => 
-    cycleTodoIds.includes(tc.todo_id) && tc.completion_date === today
-  )
-  
-  const total = todayCycleTodos.length
-  const completed = todayCycleTodos.filter(tc => tc.is_completed).length
+  const cycleTodoIds = new Set(cycleTodos.map(todo => todo.id))
+  const rows = Array.from(latestMap.values()).filter(tc => cycleTodoIds.has(tc.todo_id))
+
+  const total = rows.length
+  const completed = rows.filter(tc => tc.is_completed).length
   const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0
-  
-  // 진행 종류별 통계
+
   const byType = { dungeon: 0, quest: 0, purchase: 0, other: 0 }
   const byTypeTotal = { dungeon: 0, quest: 0, purchase: 0, other: 0 }
-  
-  todayCycleTodos.forEach(tc => {
+
+  rows.forEach(tc => {
     const todo = cycleTodos.find(t => t.id === tc.todo_id)
     if (todo) {
-      const type = todo.progress_type as keyof typeof byType
-      byTypeTotal[type]++
-      if (tc.is_completed) {
-        byType[type]++
-      }
+      const type = (todo.progress_type as keyof typeof byType) || 'other'
+      if (byTypeTotal[type] !== undefined) byTypeTotal[type]++
+      if (tc.is_completed && byType[type] !== undefined) byType[type]++
     }
   })
-  
-  return {
-    total,
-    completed,
-    pending: total - completed,
-    completionRate,
-    byType,
-    byTypeTotal
-  }
+
+  return { total, completed, pending: total - completed, completionRate, byType, byTypeTotal }
 }
 
 // 일간/주간/주말 진행현황
@@ -1059,12 +1060,9 @@ const selectCharacter = async (character: Character) => {
 
 // 숙제 완료 상태 확인
 const isTodoCompleted = (todoId: string) => {
-  // const today = new Date().toISOString().split('T')[0]  // 오늘 날짜 필터 제거
-  return todoCharacters.value.some(tc => 
-    tc.todo_id === todoId && 
-    tc.is_completed
-    // && tc.completion_date === today  // 이 필터 제거
-  )
+  const latestMap = getLatestTodoCharacterMap(todoCharacters.value)
+  const latest = latestMap.get(todoId)
+  return !!latest?.is_completed
 }
 
 // 숙제 완료 상태 토글
@@ -1143,28 +1141,16 @@ const getProgressTypeLabel = (type: string) => {
 // 반복횟수 관련 함수들
 const getTodoTargetCount = (todoId: string) => {
   if (!selectedCharacter.value) return 1
-  
-  const today = new Date().toISOString().split('T')[0]
-  const todoCharacter = todoCharacters.value.find(tc => 
-    tc.todo_id === todoId && 
-    tc.character_id === selectedCharacter.value?.id &&
-    tc.completion_date === today
-  )
-  
-  return todoCharacter?.target_count || 1
+  const latestMap = getLatestTodoCharacterMap(todoCharacters.value)
+  const row = latestMap.get(todoId)
+  return row?.target_count || 1
 }
 
 const getTodoCurrentCount = (todoId: string) => {
   if (!selectedCharacter.value) return 0
-  
-  const today = new Date().toISOString().split('T')[0]
-  const todoCharacter = todoCharacters.value.find(tc => 
-    tc.todo_id === todoId && 
-    tc.character_id === selectedCharacter.value?.id &&
-    tc.completion_date === today
-  )
-  
-  return todoCharacter?.current_count || 0
+  const latestMap = getLatestTodoCharacterMap(todoCharacters.value)
+  const row = latestMap.get(todoId)
+  return row?.current_count || 0
 }
 
 const incrementTodoCount = async (todoId: string) => {
@@ -1198,16 +1184,10 @@ const getCycleLabel = (cycle: string) => {
 // 완료 시간 표시
 const getCompletedTime = (todoId: string) => {
   if (!selectedCharacter.value) return ''
-  
-  const todoCharacter = todoCharacters.value.find(tc => 
-    tc.todo_id === todoId && 
-    tc.character_id === selectedCharacter.value?.id &&
-    tc.is_completed
-  )
-  
-  if (!todoCharacter?.completed_at) return ''
-  
-  const completedDate = new Date(todoCharacter.completed_at)
+  const latestMap = getLatestTodoCharacterMap(todoCharacters.value)
+  const row = latestMap.get(todoId)
+  if (!row?.is_completed || !row.completed_at) return ''
+  const completedDate = new Date(row.completed_at)
   const now = new Date()
   const diffInMinutes = Math.floor((now.getTime() - completedDate.getTime()) / (1000 * 60))
   

@@ -325,6 +325,7 @@ interface TodoCharacter {
   is_completed: boolean
   completed_at: string | null
   completion_date: string
+  updated_at?: string
 }
 
 interface Todo {
@@ -377,33 +378,42 @@ const todoCharacters = ref<TodoCharacter[]>([])
 const todos = ref<Todo[]>([])
 const loading = ref(true)
 
-// 전체 통계
+// 최신 레코드 맵 생성: (character_id,todo_id) 조합마다 가장 최근(completion_date DESC, updated_at DESC)
+const getLatestMap = (rows: TodoCharacter[]) => {
+  const sorted = [...rows].sort((a, b) => {
+    const dateA = a.completion_date || ''
+    const dateB = b.completion_date || ''
+    if (dateA !== dateB) return dateA > dateB ? -1 : 1
+    const updatedA = a.updated_at || ''
+    const updatedB = b.updated_at || ''
+    return updatedA > updatedB ? -1 : updatedA < updatedB ? 1 : 0
+  })
+  const map = new Map<string, TodoCharacter>()
+  for (const row of sorted) {
+    const key = `${row.character_id}:${row.todo_id}`
+    if (!map.has(key)) map.set(key, row)
+  }
+  return map
+}
+
+// 전체 통계(최신 상태 기준)
 const totalStats = computed(() => {
-  const today = new Date().toISOString().split('T')[0]
-  const todayTodos = todoCharacters.value.filter(tc => tc.completion_date === today)
-  
-  const total = todayTodos.length
-  const completed = todayTodos.filter(tc => tc.is_completed).length
+  const latestMap = getLatestMap(todoCharacters.value)
+  const latest = Array.from(latestMap.values())
+  const total = latest.length
+  const completed = latest.filter(tc => tc.is_completed).length
   const pending = total - completed
   const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0
-
-  return {
-    total,
-    completed,
-    pending,
-    completionRate
-  }
+  return { total, completed, pending, completionRate }
 })
 
 // 캐릭터별 통계
 const characterStats = computed((): CharacterStats[] => {
-  const today = new Date().toISOString().split('T')[0]
-  
+  const latestMap = getLatestMap(todoCharacters.value)
+  const latest = Array.from(latestMap.values())
   return characters.value.map(character => {
-    const characterTodos = todoCharacters.value.filter(tc => 
-      tc.character_id === character.id && tc.completion_date === today
-    )
-    
+    const characterTodos = latest.filter(tc => tc.character_id === character.id)
+
     const total = characterTodos.length
     const completed = characterTodos.filter(tc => tc.is_completed).length
     const pending = total - completed
@@ -412,23 +422,13 @@ const characterStats = computed((): CharacterStats[] => {
     // 일간/주간/주말 통계 계산
     const calculateCycleStats = (cycle: string) => {
       const cycleTodos = todos.value.filter(todo => todo.repeat_cycle === cycle)
-      const cycleTodoIds = cycleTodos.map(todo => todo.id)
-      
-      const cycleCharacterTodos = characterTodos.filter(tc => 
-        cycleTodoIds.includes(tc.todo_id)
-      )
-      
+      const cycleTodoIds = new Set(cycleTodos.map(todo => todo.id))
+      const cycleCharacterTodos = characterTodos.filter(tc => cycleTodoIds.has(tc.todo_id))
       const cycleTotal = cycleCharacterTodos.length
       const cycleCompleted = cycleCharacterTodos.filter(tc => tc.is_completed).length
       const cyclePending = cycleTotal - cycleCompleted
       const cycleCompletionRate = cycleTotal > 0 ? Math.round((cycleCompleted / cycleTotal) * 100) : 0
-      
-      return {
-        total: cycleTotal,
-        completed: cycleCompleted,
-        pending: cyclePending,
-        completionRate: cycleCompletionRate
-      }
+      return { total: cycleTotal, completed: cycleCompleted, pending: cyclePending, completionRate: cycleCompletionRate }
     }
 
     return {
@@ -449,44 +449,29 @@ const characterStats = computed((): CharacterStats[] => {
 
 // 일간/주간/주말 숙제 통계 계산 함수
 const calculateStatsByCycle = (cycle: string) => {
-  const today = new Date().toISOString().split('T')[0]
-  
-  // 해당 주기의 숙제들 필터링
+  const latestMap = getLatestMap(todoCharacters.value)
+  const latest = Array.from(latestMap.values())
   const cycleTodos = todos.value.filter(todo => todo.repeat_cycle === cycle)
-  const cycleTodoIds = cycleTodos.map(todo => todo.id)
-  
-  // 오늘 날짜의 해당 주기 숙제들
-  const todayCycleTodos = todoCharacters.value.filter(tc => 
-    cycleTodoIds.includes(tc.todo_id) && tc.completion_date === today
-  )
-  
-  const total = todayCycleTodos.length
-  const completed = todayCycleTodos.filter(tc => tc.is_completed).length
+  const cycleTodoIds = new Set(cycleTodos.map(todo => todo.id))
+  const rows = latest.filter(tc => cycleTodoIds.has(tc.todo_id))
+
+  const total = rows.length
+  const completed = rows.filter(tc => tc.is_completed).length
   const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0
-  
-  // 진행 종류별 통계
+
   const byType = { dungeon: 0, quest: 0, purchase: 0, other: 0 }
   const byTypeTotal = { dungeon: 0, quest: 0, purchase: 0, other: 0 }
-  
-  todayCycleTodos.forEach(tc => {
+
+  rows.forEach(tc => {
     const todo = cycleTodos.find(t => t.id === tc.todo_id)
     if (todo) {
-      const type = todo.progress_type as keyof typeof byType
-      byTypeTotal[type]++
-      if (tc.is_completed) {
-        byType[type]++
-      }
+      const type = (todo.progress_type as keyof typeof byType) || 'other'
+      if (byTypeTotal[type] !== undefined) byTypeTotal[type]++
+      if (tc.is_completed && byType[type] !== undefined) byType[type]++
     }
   })
-  
-  return {
-    total,
-    completed,
-    pending: total - completed,
-    completionRate,
-    byType,
-    byTypeTotal
-  }
+
+  return { total, completed, pending: total - completed, completionRate, byType, byTypeTotal }
 }
 
 // 일간/주간/주말 통계
@@ -496,14 +481,12 @@ const weekendStats = computed(() => calculateStatsByCycle('weekend'))
 
 // 최근 활동
 const recentActivities = computed((): RecentActivity[] => {
-  const today = new Date().toISOString().split('T')[0]
-  
+  // 최근 완료된 항목 5개
   return todoCharacters.value
-    .filter(tc => tc.is_completed && tc.completion_date === today && tc.completed_at)
+    .filter(tc => tc.is_completed && tc.completed_at)
     .map(tc => {
       const todo = todos.value.find(t => t.id === tc.todo_id)
       const character = characters.value.find(c => c.id === tc.character_id)
-      
       return {
         id: tc.id,
         todoTitle: todo?.title || '알 수 없는 숙제',
