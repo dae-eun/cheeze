@@ -23,7 +23,11 @@ export const useUserStore = defineStore('user', () => {
   // 인증 실패 처리 함수
   const handleAuthFailure = (message: string = '인증이 필요합니다.') => {
     if (process.client) {
-      alert(message)
+      const path = window.location?.pathname || ''
+      const shouldSilent = path === '/' || path.startsWith('/auth')
+      if (!shouldSilent) {
+        try { alert(message) } catch {}
+      }
       navigateTo('/auth/login')
     }
   }

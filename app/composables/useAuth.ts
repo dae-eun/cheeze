@@ -29,7 +29,12 @@ export const useAuth = () => {
   // 인증 실패 처리 함수
   const handleAuthFailure = (message: string = '인증이 필요합니다.') => {
     if (process.client) {
-      alert(message)
+      // 루트나 인증 관련 경로에서는 불필요한 알림을 띄우지 않음
+      const path = window.location?.pathname || ''
+      const shouldSilent = path === '/' || path.startsWith('/auth')
+      if (!shouldSilent) {
+        try { alert(message) } catch {}
+      }
       navigateTo('/auth/login')
     }
   }

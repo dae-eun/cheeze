@@ -213,10 +213,14 @@ import { useAuth } from '~/composables/useAuth'
 import { useUserStore } from '~/stores/user'
 import { useCharactersStore } from '~/stores/characters'
 import { onClickOutside } from '@vueuse/core'
+import { storeToRefs } from 'pinia'
+import { useRoute } from '#app'
 
 const { logout } = useAuth()
 const userStore = useUserStore()
+const { user: userRef } = storeToRefs(userStore)
 const charactersStore = useCharactersStore()
+const route = useRoute()
 
 // 사이드바 상태
 const sidebarOpen = ref(false)
@@ -431,6 +435,12 @@ onMounted(async () => {
   // 스토어에서 사용자 정보 가져오기
   try {
     console.log('Loading user data from store in default.vue...')
+    // 루트('/')에서는 글로벌 미들웨어/인덱스 페이지에서 분기 처리하므로
+    // 여기서는 사용자 페치와 알림을 건너뜁니다.
+    if (route.path === '/') {
+      console.log('Skip user fetch on root path')
+      return
+    }
     const user = await userStore.fetchUser()
     
     if (user) {
@@ -445,7 +455,7 @@ onMounted(async () => {
 })
 
 // 사용자 상태 변화 감지하여 대표캐릭터 로드
-watch(() => userStore.user, async (newUser) => {
+watch(userRef, async (newUser) => {
   console.log('User state changed in default.vue:', newUser)
   if (newUser) {
     await loadMainCharacter()
