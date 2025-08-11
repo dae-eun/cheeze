@@ -18,23 +18,26 @@
           <!-- 스크롤 컨테이너 -->
           <div
             ref="charScrollRef"
-            class="flex gap-3 sm:gap-4 overflow-x-auto no-scrollbar scroll-smooth snap-x snap-mandatory cursor-grab active:cursor-grabbing select-none"
+            class="flex gap-3 sm:gap-4 overflow-x-auto no-scrollbar scroll-smooth cursor-grab active:cursor-grabbing select-none touch-pan-x"
             @scroll="onCharactersScroll"
             @mousedown="onDragStart"
-            @touchstart.passive="onTouchStart"
+            @touchstart="onTouchStart"
+            style="touch-action: pan-x; -webkit-overflow-scrolling: touch;"
           >
             <button
               v-for="character in characters"
               :key="character.id"
               @click="onCharacterClick(character, $event)"
               :class="[
-                'snap-start shrink-0 w-[170px] sm:w-[220px] p-3 sm:p-4 rounded-xl text-left transition-colors cursor-grab active:cursor-grabbing',
+                'shrink-0 w-[170px] sm:w-[220px] p-3 sm:p-4 rounded-xl text-left transition-colors cursor-grab active:cursor-grabbing',
                 selectedCharacter?.id === character.id
                   ? 'bg-blue-600 text-white shadow-lg ring-2 ring-blue-400'
                   : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-600'
               ]"
               @mousedown.stop="onDragStart"
-              @touchstart.passive.stop="onTouchStart"
+              @touchstart.stop="onTouchStart"
+              @touchend="onTouchEndTap(character, $event)"
+              style="touch-action: manipulation;"
             >
               <div class="flex items-center justify-between">
                 <div class="flex items-center gap-2 min-w-0">
@@ -1015,42 +1018,90 @@ const onDragStart = (e: MouseEvent) => {
 }
 
 let touchStartX = 0
+let touchStartY = 0
 let touchScrollLeft = 0
 let dragClickGuard = false
+
 const onTouchStart = (e: TouchEvent) => {
   const el = charScrollRef.value
   if (!el) return
+  
   const first = e.touches && e.touches[0]
   if (!first) return
-  touchStartX = first.pageX - el.offsetLeft
+  
+  touchStartX = first.pageX
+  touchStartY = first.pageY
   touchScrollLeft = el.scrollLeft
-  const onTouchMove = (ev: TouchEvent) => {
-    dragClickGuard = true
-    const t = ev.touches && ev.touches[0]
+  dragClickGuard = false // 터치 시작 시 클릭 가드 초기화
+  
+  let hasDragged = false
+  let isTouching = true
+  
+  const onTouchMove = (ev: Event) => {
+    if (!isTouching) return
+    
+    const touchEvent = ev as TouchEvent
+    const t = touchEvent.touches && touchEvent.touches[0]
     if (!t) return
-    const x = t.pageX - el.offsetLeft
-    const walk = (x - touchStartX)
-    el.scrollLeft = touchScrollLeft - walk
-    updateScrollButtons()
+    
+    const x = t.pageX
+    const y = t.pageY
+    const walkX = Math.abs(x - touchStartX)
+    const walkY = Math.abs(y - touchStartY)
+    
+    // 최소 드래그 거리(10px) 이상 움직였을 때만 드래그로 인식
+    if (walkX > 10 || walkY > 10) {
+      hasDragged = true
+      touchEvent.preventDefault() // 스크롤 방지
+      dragClickGuard = true
+      el.scrollLeft = touchScrollLeft - (x - touchStartX)
+      updateScrollButtons()
+    }
   }
+  
   const onTouchEnd = () => {
+    isTouching = false
     updateScrollButtons()
-    setTimeout(() => { dragClickGuard = false }, 0)
+    
+    // 실제로 드래그가 있었는지 확인
+    if (hasDragged) {
+      // 드래그가 있었다면 짧은 시간 후 클릭 허용
+      setTimeout(() => { 
+        dragClickGuard = false 
+      }, 50)
+    } else {
+      // 드래그가 없었다면 즉시 클릭 허용
+      dragClickGuard = false
+    }
+    
     window.removeEventListener('touchmove', onTouchMove)
     window.removeEventListener('touchend', onTouchEnd)
   }
+  
   window.addEventListener('touchmove', onTouchMove, { passive: false })
   window.addEventListener('touchend', onTouchEnd)
 }
 
 // 드래그 직후 클릭 방지 및 카드 클릭 핸들러
-const onCharacterClick = (character: Character, e: Event) => {
+const onTouchEndTap = (character: Character, e: TouchEvent) => {
+  // 드래그에 의해 클릭이 막혀야 하면 무시
   if (dragClickGuard) {
     e.preventDefault()
     e.stopPropagation()
-    dragClickGuard = false
     return
   }
+  selectCharacter(character)
+}
+
+const onCharacterClick = (character: Character, e: Event) => {
+  // 드래그 가드가 활성화되어 있으면 클릭 무시
+  if (dragClickGuard) {
+    e.preventDefault()
+    e.stopPropagation()
+    return
+  }
+  
+  // 캐릭터 선택
   selectCharacter(character)
 }
 
@@ -1850,6 +1901,31 @@ onMounted(async () => {
   .slide-out-move,
   .slide-in-move {
     transition: transform 0.5s ease-out;
+  }
+}
+
+/* 터치 드래그 성능 최적화 */
+.touch-pan-x {
+  touch-action: pan-x;
+  -webkit-overflow-scrolling: touch;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+/* 터치 디바이스에서 스크롤 부드럽게 */
+@media (hover: none) and (pointer: coarse) {
+  .scroll-smooth {
+    scroll-behavior: auto;
+  }
+  
+  .snap-x {
+    scroll-snap-type: x mandatory;
+  }
+  
+  .snap-start {
+    scroll-snap-align: start;
   }
 }
 </style> 
