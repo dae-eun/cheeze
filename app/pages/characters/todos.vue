@@ -4,53 +4,26 @@
       <!-- 캐릭터 선택 버튼들 (최상단) -->
       <div class="mb-6 sm:mb-8">
         <h2 class="text-base sm:text-lg font-medium text-gray-900 dark:text-white mb-3 sm:mb-4">캐릭터 선택</h2>
-        <div class="relative">
-          <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
-            <button
-              v-for="character in characters"
-              :key="character.id"
-              @click="onCharacterClick(character, $event)"
-              type="button"
-              :class="[
-                'w-full p-3 sm:p-4 rounded-xl text-left transition-colors',
-                selectedCharacter?.id === character.id
-                  ? 'bg-blue-600 text-white shadow-lg ring-2 ring-blue-400'
-                  : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-600'
-              ]"
-            >
-              <div class="flex items-center justify-between">
-                <div class="flex items-center gap-2 min-w-0">
-                  <span class="truncate font-semibold text-sm sm:text-base">{{ character.name }}</span>
-                  <span v-if="character.is_main" class="bg-yellow-400/90 text-yellow-900 px-1.5 py-0.5 rounded-full text-[10px] sm:text-xs font-bold whitespace-nowrap">메인</span>
-                </div>
-              </div>
-              <div class="mt-1 text-[10px] sm:text-xs opacity-75">{{ character.servers?.name }}</div>
-
-              <div class="mt-3 space-y-1.5">
-                <div class="flex items-center gap-2">
-                  <span class="w-8 text-[10px] sm:text-xs">일간</span>
-                  <div class="flex-1 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                    <div class="h-full bg-green-500 transition-all duration-300" :style="{ width: (getCharacterProgress(character.id).daily || 0) + '%' }"></div>
-                  </div>
-                  <span class="w-8 text-right text-[10px] sm:text-xs">{{ getCharacterProgress(character.id).daily || 0 }}%</span>
-                </div>
-                <div class="flex items-center gap-2">
-                  <span class="w-8 text-[10px] sm:text-xs">주간</span>
-                  <div class="flex-1 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                    <div class="h-full bg-blue-500 transition-all duration-300" :style="{ width: (getCharacterProgress(character.id).weekly || 0) + '%' }"></div>
-                  </div>
-                  <span class="w-8 text-right text-[10px] sm:text-xs">{{ getCharacterProgress(character.id).weekly || 0 }}%</span>
-                </div>
-                <div class="flex items-center gap-2">
-                  <span class="w-8 text-[10px] sm:text-xs">주말</span>
-                  <div class="flex-1 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                    <div class="h-full bg-orange-500 transition-all duration-300" :style="{ width: (getCharacterProgress(character.id).weekend || 0) + '%' }"></div>
-                  </div>
-                  <span class="w-8 text-right text-[10px] sm:text-xs">{{ getCharacterProgress(character.id).weekend || 0 }}%</span>
-                </div>
-              </div>
-            </button>
-          </div>
+        <div class="flex flex-wrap gap-2 sm:gap-3">
+          <button
+            v-for="character in characters"
+            :key="character.id"
+            @click="selectCharacter(character)"
+            :class="[
+              'px-3 sm:px-4 py-2 rounded-lg font-medium transition-colors text-sm sm:text-base',
+              selectedCharacter?.id === character.id
+                ? 'bg-blue-600 text-white shadow-lg'
+                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-600'
+            ]"
+          >
+            <div class="flex items-center space-x-1 sm:space-x-2">
+              <span class="text-xs sm:text-sm">{{ character.name }}</span>
+              <span v-if="character.is_main" class="bg-yellow-500 text-yellow-900 px-1 py-0.5 rounded-full text-xs font-bold">
+                메인
+              </span>
+            </div>
+            <div class="text-xs opacity-75 hidden sm:block">{{ character.servers?.name }}</div>
+          </button>
         </div>
       </div>
 
@@ -917,179 +890,6 @@ interface PendingChange {
 
 const pendingChanges = ref<Map<string, PendingChange>>(new Map())
 
-  // 캐릭터별 진행률 캐시
-  const characterProgressCache = ref(new Map<string, { daily: number; weekly: number; weekend: number }>())
-  const getCharacterProgress = (characterId: string) => {
-    return characterProgressCache.value.get(characterId) || { daily: 0, weekly: 0, weekend: 0 }
-  }
-
-// 가로 스크롤/드래그 상태
-const charScrollRef = ref<HTMLElement | null>(null)
-const canScrollLeft = ref(false)
-const canScrollRight = ref(false)
-let isDragging = false
-let startX = 0
-let scrollLeft = 0
-
-const updateScrollButtons = () => {
-  const el = charScrollRef.value
-  if (!el) return
-  const epsilon = 2
-  const maxScrollLeft = el.scrollWidth - el.clientWidth
-  const current = Math.max(0, Math.min(el.scrollLeft, maxScrollLeft))
-  canScrollLeft.value = current > epsilon
-  canScrollRight.value = current < (maxScrollLeft - epsilon)
-}
-
-const onCharactersScroll = () => {
-  updateScrollButtons()
-}
-
-const scrollCharacters = (direction: -1 | 1) => {
-  const el = charScrollRef.value
-  if (!el) return
-  // 실제 버튼 폭 + gap에 맞추어 단계 스크롤; 좌측/우측 오버스크롤 방지하도록 보정
-  const firstCard = el.querySelector('button') as HTMLElement | null
-  const measured = firstCard ? firstCard.offsetWidth : 220
-  const gap = 12 // sm 미만 gap-3 기준
-  const cardWidth = measured + gap
-  el.scrollBy({ left: direction * cardWidth, behavior: 'smooth' })
-}
-
-const onDragStart = (e: MouseEvent) => {
-  const el = charScrollRef.value
-  if (!el) return
-  // 새로운 마우스 상호작용 시작 시 가드 초기화
-  dragClickGuard = false
-  isDragging = true
-  startX = e.pageX - el.offsetLeft
-  scrollLeft = el.scrollLeft
-  let hasMouseDragged = false
-
-  const onMove = (ev: MouseEvent) => {
-    if (!isDragging) return
-    const x = ev.pageX - el.offsetLeft
-    const walk = x - startX
-    if (Math.abs(walk) > 10) {
-      if (!hasMouseDragged) {
-        hasMouseDragged = true
-        // 실제 드래그로 판단될 때만 클릭 가드 활성화
-        dragClickGuard = true
-      }
-      ev.preventDefault()
-      el.scrollLeft = scrollLeft - walk
-      updateScrollButtons()
-    }
-  }
-
-  const onUp = (ev?: MouseEvent) => {
-    isDragging = false
-    updateScrollButtons()
-    // 드래그가 없었으면 즉시 클릭 허용, 있었으면 짧게만 클릭 차단
-    if (hasMouseDragged) {
-      setTimeout(() => {
-        dragClickGuard = false
-      }, 50)
-    } else {
-      dragClickGuard = false
-    }
-    window.removeEventListener('mousemove', onMove)
-    window.removeEventListener('mouseup', onUp)
-  }
-
-  window.addEventListener('mousemove', onMove)
-  window.addEventListener('mouseup', onUp)
-}
-
-let touchStartX = 0
-let touchStartY = 0
-let touchScrollLeft = 0
-let dragClickGuard = false
-
-const onTouchStart = (e: TouchEvent) => {
-  const el = charScrollRef.value
-  if (!el) return
-  
-  const first = e.touches && e.touches[0]
-  if (!first) return
-  
-  touchStartX = first.pageX
-  touchStartY = first.pageY
-  touchScrollLeft = el.scrollLeft
-  dragClickGuard = false // 터치 시작 시 클릭 가드 초기화
-  
-  let hasDragged = false
-  let isTouching = true
-  
-  const onTouchMove = (ev: Event) => {
-    if (!isTouching) return
-    
-    const touchEvent = ev as TouchEvent
-    const t = touchEvent.touches && touchEvent.touches[0]
-    if (!t) return
-    
-    const x = t.pageX
-    const y = t.pageY
-    const walkX = Math.abs(x - touchStartX)
-    const walkY = Math.abs(y - touchStartY)
-    
-    // 최소 드래그 거리(10px) 이상 움직였을 때만 드래그로 인식
-    if (walkX > 10 || walkY > 10) {
-      hasDragged = true
-      touchEvent.preventDefault() // 스크롤 방지
-      dragClickGuard = true
-      el.scrollLeft = touchScrollLeft - (x - touchStartX)
-      updateScrollButtons()
-    }
-  }
-  
-  const onTouchEnd = () => {
-    isTouching = false
-    updateScrollButtons()
-    
-    // 실제로 드래그가 있었는지 확인
-    if (hasDragged) {
-      // 드래그가 있었다면 짧은 시간 후 클릭 허용
-      setTimeout(() => { 
-        dragClickGuard = false 
-      }, 50)
-    } else {
-      // 드래그가 없었다면 즉시 클릭 허용
-      dragClickGuard = false
-    }
-    
-    window.removeEventListener('touchmove', onTouchMove)
-    window.removeEventListener('touchend', onTouchEnd)
-  }
-  
-  window.addEventListener('touchmove', onTouchMove, { passive: false })
-  window.addEventListener('touchend', onTouchEnd)
-}
-
-// 드래그 직후 클릭 방지 및 카드 클릭 핸들러
-const onTouchEndTap = (character: Character, e: TouchEvent) => {
-  // 드래그에 의해 클릭이 막혀야 하면 무시
-  if (dragClickGuard) {
-    e.preventDefault()
-    e.stopPropagation()
-    return
-  }
-  selectCharacter(character)
-}
-
-const onCharacterClick = (character: Character, e: MouseEvent | Event) => {
-  // 마우스 인터랙션 중이라도 실제 드래그가 아니면 클릭 허용
-  if (isDragging) {
-    // 드래그로 판정된 경우에만 막고, 아니면 통과
-    if (dragClickGuard) {
-      e.preventDefault?.()
-      e.stopPropagation?.()
-      return
-    }
-  }
-  selectCharacter(character)
-}
-
 // 숙제 복사 관련 상태
 const showCopyModal = ref(false)
 const selectedSourceCharacter = ref('')
@@ -1217,16 +1017,6 @@ const dailyProgress = computed(() => calculateProgressByCycle('daily'))
 const weeklyProgress = computed(() => calculateProgressByCycle('weekly'))
 const monthlyProgress = computed(() => calculateProgressByCycle('weekend'))
 
-// 선택된 캐릭터의 진행률을 캐시에 업데이트
-const updateSelectedCharacterProgressCache = () => {
-  if (!selectedCharacter.value) return
-  characterProgressCache.value.set(selectedCharacter.value.id, {
-    daily: dailyProgress.value.completionRate,
-    weekly: weeklyProgress.value.completionRate,
-    weekend: monthlyProgress.value.completionRate
-  })
-}
-
 // 필터링된 숙제 목록 (모달용)
 const filteredTodos = computed(() => {
   let filtered = todos.value
@@ -1281,8 +1071,6 @@ const loadTodoCharacters = async () => {
 
     if (response.success) {
       todoCharacters.value = (response.todoCharacters || []) as unknown as TodoCharacter[]
-      // 선택된 캐릭터 진행률 캐시에 저장
-      updateSelectedCharacterProgressCache()
     }
   } catch (error) {
     console.error('Error loading todo characters:', error)
@@ -1322,7 +1110,6 @@ const toggleTodo = async (todoId: string, isCompleted: boolean) => {
 
     if (response.success) {
       await loadTodoCharacters()
-      updateSelectedCharacterProgressCache()
     }
   } catch (error) {
     console.error('Error toggling todo:', error)
@@ -1358,7 +1145,6 @@ const removeTodo = async (todoId: string) => {
     if (response.success) {
       await loadTodoCharacters()
       alert('숙제가 성공적으로 제거되었습니다.')
-      updateSelectedCharacterProgressCache()
     } else {
       alert('숙제 제거에 실패했습니다.')
     }
@@ -1408,8 +1194,6 @@ const incrementTodoCount = async (todoId: string) => {
     if (response.success) {
       await loadTodoCharacters()
       console.log('반복횟수가 증가했습니다:', response.message)
-      // 진행률 갱신
-      updateSelectedCharacterProgressCache()
     }
   } catch (error) {
     console.error('반복횟수 증가 실패:', error)
@@ -1633,7 +1417,6 @@ const applyChanges = async () => {
         pendingChanges.value.clear() // 대기 중인 변경사항 초기화
         alert(`${successCount}개의 변경사항이 성공적으로 적용되었습니다.`)
         showAddTodoModal.value = false
-        updateSelectedCharacterProgressCache()
       }
     }
   } catch (error) {
@@ -1714,7 +1497,6 @@ const undoCompletedTodo = async (todoId: string) => {
     if (response.success) {
       await loadTodoCharacters()
       console.log('숙제 완료 상태가 되돌려졌습니다.')
-      updateSelectedCharacterProgressCache()
     } else {
       alert('숙제 되돌리기에 실패했습니다.')
     }
@@ -1786,46 +1568,6 @@ onMounted(async () => {
       if (!characterSelected && characters.value.length > 0 && characters.value[0]) {
         selectCharacter(characters.value[0])
       }
-
-      // 최초 로딩 시 모든 캐릭터 프로그레스 placeholder 0으로 초기화
-      characters.value.forEach(c => {
-        if (!characterProgressCache.value.has(c.id)) {
-          characterProgressCache.value.set(c.id, { daily: 0, weekly: 0, weekend: 0 })
-        }
-      })
-
-      // 경량 진행률 API로 모든 캐릭터의 초기 진행률을 불러와 카드에 표시
-      try {
-        const progressResponse = await $fetch('/api/characters/progress', { method: 'GET' })
-        if ((progressResponse as any)?.success) {
-          const progress = (progressResponse as any).progress as Record<string, any>
-          characters.value.forEach(c => {
-            const p = progress[c.id]
-            if (p) {
-              const dailyRate = p.daily.total > 0 ? Math.round((p.daily.completed / p.daily.total) * 100) : 0
-              const weeklyRate = p.weekly.total > 0 ? Math.round((p.weekly.completed / p.weekly.total) * 100) : 0
-              const weekendRate = p.weekend.total > 0 ? Math.round((p.weekend.completed / p.weekend.total) * 100) : 0
-              characterProgressCache.value.set(c.id, {
-                daily: dailyRate,
-                weekly: weeklyRate,
-                weekend: weekendRate
-              })
-            }
-          })
-        }
-      } catch (e) {
-        console.error('초기 진행률 불러오기 실패:', e)
-      }
-
-      // 초기 스크롤 버튼 상태 업데이트
-      nextTick(() => {
-        const el = charScrollRef.value
-        if (el) {
-          // iOS/브라우저 별 반올림 차이를 흡수하기 위해 한 틱 뒤 다시 계산
-          updateScrollButtons()
-          requestAnimationFrame(() => updateScrollButtons())
-        }
-      })
     }
   } catch (error) {
     console.error('Error in onMounted:', error)
@@ -1886,31 +1628,6 @@ onMounted(async () => {
   .slide-out-move,
   .slide-in-move {
     transition: transform 0.5s ease-out;
-  }
-}
-
-/* 터치 드래그 성능 최적화 */
-.touch-pan-x {
-  touch-action: pan-x;
-  -webkit-overflow-scrolling: touch;
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-  user-select: none;
-}
-
-/* 터치 디바이스에서 스크롤 부드럽게 */
-@media (hover: none) and (pointer: coarse) {
-  .scroll-smooth {
-    scroll-behavior: auto;
-  }
-  
-  .snap-x {
-    scroll-snap-type: x mandatory;
-  }
-  
-  .snap-start {
-    scroll-snap-align: start;
   }
 }
 </style> 
