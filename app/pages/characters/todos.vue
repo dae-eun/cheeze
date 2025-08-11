@@ -4,61 +4,85 @@
       <!-- 캐릭터 선택 버튼들 (최상단) -->
       <div class="mb-6 sm:mb-8">
         <h2 class="text-base sm:text-lg font-medium text-gray-900 dark:text-white mb-3 sm:mb-4">캐릭터 선택</h2>
-        <div class="flex flex-wrap gap-3 sm:gap-4">
+        <div class="relative">
+          <!-- 좌측 버튼 -->
           <button
-            v-for="character in characters"
-            :key="character.id"
-            @click="selectCharacter(character)"
-            :class="[
-              'w-[170px] sm:w-[220px] p-3 sm:p-4 rounded-xl text-left transition-colors',
-              selectedCharacter?.id === character.id
-                ? 'bg-blue-600 text-white shadow-lg ring-2 ring-blue-400'
-                : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-600'
-            ]"
+            v-show="canScrollLeft"
+            @click="scrollCharacters(-1)"
+            class="hidden sm:flex absolute -left-1 top-1/2 -translate-y-1/2 z-10 items-center justify-center w-9 h-9 rounded-full bg-white/90 backdrop-blur dark:bg-gray-800/90 border border-gray-200 dark:border-gray-700 shadow hover:bg-gray-50 dark:hover:bg-gray-700"
+            aria-label="왼쪽으로 스크롤"
           >
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-2 min-w-0">
-                <span class="truncate font-semibold text-sm sm:text-base">{{ character.name }}</span>
-                <span v-if="character.is_main" class="bg-yellow-400/90 text-yellow-900 px-1.5 py-0.5 rounded-full text-[10px] sm:text-xs font-bold whitespace-nowrap">
-                  메인
-                </span>
-              </div>
-            </div>
-            <div class="mt-1 text-[10px] sm:text-xs opacity-75">{{ character.servers?.name }}</div>
-
-            <div class="mt-3 space-y-1.5">
-              <div class="flex items-center gap-2">
-                <span class="w-8 text-[10px] sm:text-xs">일간</span>
-                <div class="flex-1 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                  <div
-                    class="h-full bg-green-500 transition-all duration-300"
-                    :style="{ width: (getCharacterProgress(character.id).daily || 0) + '%' }"
-                  ></div>
-                </div>
-                <span class="w-8 text-right text-[10px] sm:text-xs">{{ getCharacterProgress(character.id).daily || 0 }}%</span>
-              </div>
-              <div class="flex items-center gap-2">
-                <span class="w-8 text-[10px] sm:text-xs">주간</span>
-                <div class="flex-1 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                  <div
-                    class="h-full bg-blue-500 transition-all duration-300"
-                    :style="{ width: (getCharacterProgress(character.id).weekly || 0) + '%' }"
-                  ></div>
-                </div>
-                <span class="w-8 text-right text-[10px] sm:text-xs">{{ getCharacterProgress(character.id).weekly || 0 }}%</span>
-              </div>
-              <div class="flex items-center gap-2">
-                <span class="w-8 text-[10px] sm:text-xs">주말</span>
-                <div class="flex-1 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                  <div
-                    class="h-full bg-orange-500 transition-all duration-300"
-                    :style="{ width: (getCharacterProgress(character.id).weekend || 0) + '%' }"
-                  ></div>
-                </div>
-                <span class="w-8 text-right text-[10px] sm:text-xs">{{ getCharacterProgress(character.id).weekend || 0 }}%</span>
-              </div>
-            </div>
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
           </button>
+
+          <!-- 스크롤 컨테이너 -->
+          <div
+            ref="charScrollRef"
+            class="flex gap-3 sm:gap-4 overflow-x-auto no-scrollbar scroll-smooth snap-x snap-mandatory cursor-grab active:cursor-grabbing select-none"
+            @scroll="onCharactersScroll"
+            @mousedown="onDragStart"
+            @touchstart.passive="onTouchStart"
+          >
+            <button
+              v-for="character in characters"
+              :key="character.id"
+              @click="onCharacterClick(character, $event)"
+              :class="[
+                'snap-start shrink-0 w-[170px] sm:w-[220px] p-3 sm:p-4 rounded-xl text-left transition-colors cursor-grab active:cursor-grabbing',
+                selectedCharacter?.id === character.id
+                  ? 'bg-blue-600 text-white shadow-lg ring-2 ring-blue-400'
+                  : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-600'
+              ]"
+              @mousedown.stop="onDragStart"
+              @touchstart.passive.stop="onTouchStart"
+            >
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2 min-w-0">
+                  <span class="truncate font-semibold text-sm sm:text-base">{{ character.name }}</span>
+                  <span v-if="character.is_main" class="bg-yellow-400/90 text-yellow-900 px-1.5 py-0.5 rounded-full text-[10px] sm:text-xs font-bold whitespace-nowrap">메인</span>
+                </div>
+              </div>
+              <div class="mt-1 text-[10px] sm:text-xs opacity-75">{{ character.servers?.name }}</div>
+
+              <div class="mt-3 space-y-1.5">
+                <div class="flex items-center gap-2">
+                  <span class="w-8 text-[10px] sm:text-xs">일간</span>
+                  <div class="flex-1 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                    <div class="h-full bg-green-500 transition-all duration-300" :style="{ width: (getCharacterProgress(character.id).daily || 0) + '%' }"></div>
+                  </div>
+                  <span class="w-8 text-right text-[10px] sm:text-xs">{{ getCharacterProgress(character.id).daily || 0 }}%</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="w-8 text-[10px] sm:text-xs">주간</span>
+                  <div class="flex-1 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                    <div class="h-full bg-blue-500 transition-all duration-300" :style="{ width: (getCharacterProgress(character.id).weekly || 0) + '%' }"></div>
+                  </div>
+                  <span class="w-8 text-right text-[10px] sm:text-xs">{{ getCharacterProgress(character.id).weekly || 0 }}%</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="w-8 text-[10px] sm:text-xs">주말</span>
+                  <div class="flex-1 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                    <div class="h-full bg-orange-500 transition-all duration-300" :style="{ width: (getCharacterProgress(character.id).weekend || 0) + '%' }"></div>
+                  </div>
+                  <span class="w-8 text-right text-[10px] sm:text-xs">{{ getCharacterProgress(character.id).weekend || 0 }}%</span>
+                </div>
+              </div>
+            </button>
+          </div>
+
+          <!-- 우측 버튼 -->
+          <button
+            v-show="canScrollRight"
+            @click="scrollCharacters(1)"
+            class="hidden sm:flex absolute -right-1 top-1/2 -translate-y-1/2 z-10 items-center justify-center w-9 h-9 rounded-full bg-white/90 backdrop-blur dark:bg-gray-800/90 border border-gray-200 dark:border-gray-700 shadow hover:bg-gray-50 dark:hover:bg-gray-700"
+            aria-label="오른쪽으로 스크롤"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </button>
+
+          <!-- 그라데이션 가장자리 -->
+          <div v-show="canScrollLeft" class="pointer-events-none absolute inset-y-0 left-0 w-6 bg-gradient-to-r from-gray-50 dark:from-gray-900 to-transparent"></div>
+          <div v-show="canScrollRight" class="pointer-events-none absolute inset-y-0 right-0 w-6 bg-gradient-to-l from-gray-50 dark:from-gray-900 to-transparent"></div>
         </div>
       </div>
 
@@ -931,6 +955,105 @@ const pendingChanges = ref<Map<string, PendingChange>>(new Map())
     return characterProgressCache.value.get(characterId) || { daily: 0, weekly: 0, weekend: 0 }
   }
 
+// 가로 스크롤/드래그 상태
+const charScrollRef = ref<HTMLElement | null>(null)
+const canScrollLeft = ref(false)
+const canScrollRight = ref(false)
+let isDragging = false
+let startX = 0
+let scrollLeft = 0
+
+const updateScrollButtons = () => {
+  const el = charScrollRef.value
+  if (!el) return
+  const epsilon = 2
+  const maxScrollLeft = el.scrollWidth - el.clientWidth
+  const current = Math.max(0, Math.min(el.scrollLeft, maxScrollLeft))
+  canScrollLeft.value = current > epsilon
+  canScrollRight.value = current < (maxScrollLeft - epsilon)
+}
+
+const onCharactersScroll = () => {
+  updateScrollButtons()
+}
+
+const scrollCharacters = (direction: -1 | 1) => {
+  const el = charScrollRef.value
+  if (!el) return
+  // 실제 버튼 폭 + gap에 맞추어 단계 스크롤; 좌측/우측 오버스크롤 방지하도록 보정
+  const firstCard = el.querySelector('button') as HTMLElement | null
+  const measured = firstCard ? firstCard.offsetWidth : 220
+  const gap = 12 // sm 미만 gap-3 기준
+  const cardWidth = measured + gap
+  el.scrollBy({ left: direction * cardWidth, behavior: 'smooth' })
+}
+
+const onDragStart = (e: MouseEvent) => {
+  const el = charScrollRef.value
+  if (!el) return
+  // 드래그로 스크롤 중에는 클릭 액션 방지 플래그 세팅
+  dragClickGuard = true
+  isDragging = true
+  startX = e.pageX - el.offsetLeft
+  scrollLeft = el.scrollLeft
+  const onMove = (ev: MouseEvent) => {
+    if (!isDragging) return
+    ev.preventDefault()
+    const x = ev.pageX - el.offsetLeft
+    const walk = (x - startX)
+    el.scrollLeft = scrollLeft - walk
+    updateScrollButtons()
+  }
+  const onUp = () => {
+    isDragging = false
+    updateScrollButtons()
+    window.removeEventListener('mousemove', onMove)
+    window.removeEventListener('mouseup', onUp)
+  }
+  window.addEventListener('mousemove', onMove)
+  window.addEventListener('mouseup', onUp)
+}
+
+let touchStartX = 0
+let touchScrollLeft = 0
+let dragClickGuard = false
+const onTouchStart = (e: TouchEvent) => {
+  const el = charScrollRef.value
+  if (!el) return
+  const first = e.touches && e.touches[0]
+  if (!first) return
+  touchStartX = first.pageX - el.offsetLeft
+  touchScrollLeft = el.scrollLeft
+  const onTouchMove = (ev: TouchEvent) => {
+    dragClickGuard = true
+    const t = ev.touches && ev.touches[0]
+    if (!t) return
+    const x = t.pageX - el.offsetLeft
+    const walk = (x - touchStartX)
+    el.scrollLeft = touchScrollLeft - walk
+    updateScrollButtons()
+  }
+  const onTouchEnd = () => {
+    updateScrollButtons()
+    setTimeout(() => { dragClickGuard = false }, 0)
+    window.removeEventListener('touchmove', onTouchMove)
+    window.removeEventListener('touchend', onTouchEnd)
+  }
+  window.addEventListener('touchmove', onTouchMove, { passive: false })
+  window.addEventListener('touchend', onTouchEnd)
+}
+
+// 드래그 직후 클릭 방지 및 카드 클릭 핸들러
+const onCharacterClick = (character: Character, e: Event) => {
+  if (dragClickGuard) {
+    e.preventDefault()
+    e.stopPropagation()
+    dragClickGuard = false
+    return
+  }
+  selectCharacter(character)
+}
+
 // 숙제 복사 관련 상태
 const showCopyModal = ref(false)
 const selectedSourceCharacter = ref('')
@@ -1657,6 +1780,16 @@ onMounted(async () => {
       } catch (e) {
         console.error('초기 진행률 불러오기 실패:', e)
       }
+
+      // 초기 스크롤 버튼 상태 업데이트
+      nextTick(() => {
+        const el = charScrollRef.value
+        if (el) {
+          // iOS/브라우저 별 반올림 차이를 흡수하기 위해 한 틱 뒤 다시 계산
+          updateScrollButtons()
+          requestAnimationFrame(() => updateScrollButtons())
+        }
+      })
     }
   } catch (error) {
     console.error('Error in onMounted:', error)
