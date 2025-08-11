@@ -55,7 +55,7 @@
              </div>
            </div>
 
-           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                            <!-- 메인 캐릭터 -->
               <div v-if="mainCharacter" class="p-4 rounded-lg border-2 border-blue-200 dark:border-blue-500 main-character-card">
                                  <div class="flex justify-between items-center mb-3">
@@ -92,14 +92,25 @@
                 @drop="onDrop"
                 @touchstart="onTouchStart($event, index)"
                 @touchmove.prevent="onTouchMove($event)"
-                @touchend="onTouchEnd"
+                @touchend="onTouchEnd($event)"
               >
                <div
                  v-if="isDraggingAny && dropTargetIndex === index"
                  class="absolute inset-0 border-2 border-dashed border-blue-400/80 bg-blue-50/60 dark:bg-blue-900/80 rounded-lg flex items-center justify-center pointer-events-none z-10"
                >
                  <span class="text-xs font-medium text-blue-700 dark:text-white">원하는 위치에 놓아주세요</span>
-               </div>
+          </div>
+
+          <!-- 터치 드래그 미리보기 -->
+          <div
+            v-if="isTouchDragging"
+            class="fixed z-50 pointer-events-none"
+            :style="{ left: touchPos.x + 'px', top: touchPos.y + 'px', transform: 'translate(-50%, -50%)' }"
+          >
+            <div class="px-3 py-1 rounded-md bg-blue-600 text-white text-xs shadow-lg">
+              이동 중: {{ touchDragName }}
+            </div>
+          </div>
                <div class="flex justify-between items-center mb-3">
                  <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300">서브 캐릭터</h3>
                  <div class="flex space-x-2">
@@ -309,6 +320,14 @@ watch(subCharacters, (list) => {
 const draggingIndex = ref<number | null>(null)
 const touchStartIndex = ref<number | null>(null)
 const touchCurrentIndex = ref<number | null>(null)
+const isTouchDragging = computed(() => touchStartIndex.value !== null)
+const touchPos = ref<{ x: number; y: number }>({ x: 0, y: 0 })
+const touchDragName = computed(() => {
+  const idx = touchStartIndex.value
+  if (idx === null) return ''
+  const item = subReorderList.value[idx]
+  return item ? item.name : ''
+})
 
 const swapItems = (arr: Character[], from: number, to: number) => {
   if (from === to) return
@@ -367,13 +386,27 @@ const onTouchStart = (e: TouchEvent, index: number) => {
   touchStartIndex.value = index
   touchCurrentIndex.value = index
   dropTargetIndex.value = index
+  const t = (e.touches && e.touches[0]) || (e.changedTouches && e.changedTouches[0])
+  if (t) touchPos.value = { x: t.clientX, y: t.clientY }
 }
 
 const onTouchMove = (e: TouchEvent) => {
+  const t = (e.touches && e.touches[0]) || (e.changedTouches && e.changedTouches[0])
+  if (t) touchPos.value = { x: t.clientX, y: t.clientY }
   const idx = getTouchedIndex(e)
-  if (idx === null || touchStartIndex.value === null) return
+  if (touchStartIndex.value === null) return
+  // 카드 밖으로 벗어나면 하이라이트 제거
+  if (idx === null) {
+    dropTargetIndex.value = null
+    return
+  }
+  // 자기 자신 위에서는 하이라이트 숨김
+  if (idx === touchStartIndex.value) {
+    dropTargetIndex.value = null
+    return
+  }
+  // 하이라이트 이동 (실제 스왑은 touchEnd에서 1회 수행)
   if (touchCurrentIndex.value !== idx) {
-    // 하이라이트만 이동 (실제 스왑은 touchEnd에서 1회 수행)
     dropTargetIndex.value = idx
   }
 }
@@ -381,24 +414,17 @@ const onTouchMove = (e: TouchEvent) => {
 const onTouchEnd = async (e: TouchEvent) => {
   if (touchStartIndex.value === null) return
   const from = touchStartIndex.value
-  const to = dropTargetIndex.value ?? from
-  // 손 뗀 위치가 유효한 카드(드랍 타겟)가 아니면 취소
-  const idx = getTouchedIndex(e)
-  if (idx === null) {
-    touchStartIndex.value = null
-    touchCurrentIndex.value = null
-    dropTargetIndex.value = null
-    return
-  }
-  // 위치가 동일하면 아무 것도 하지 않음 (API 호출 스킵)
-  if (from === to) {
+  // 드랍 시점의 실제 위치만으로 결정 (이전에 하이라이트된 타겟은 무시)
+  const endIdx = getTouchedIndex(e)
+  // 카드 위가 아니거나 자기 자신이면 취소 처리
+  if (endIdx === null || endIdx === from) {
     touchStartIndex.value = null
     touchCurrentIndex.value = null
     dropTargetIndex.value = null
     return
   }
   // 실제 위치 변경 후 저장
-  swapItems(subReorderList.value, from, to)
+  swapItems(subReorderList.value, from, endIdx)
   touchStartIndex.value = null
   touchCurrentIndex.value = null
   dropTargetIndex.value = null
