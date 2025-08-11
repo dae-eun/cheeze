@@ -45,7 +45,15 @@
 
                 <!-- 캐릭터 정보 -->
          <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
-           <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6">캐릭터 정보</h2>
+           <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+             <h2 class="text-xl font-semibold text-gray-900 dark:text-white">캐릭터 정보</h2>
+             <div class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1">
+               <svg class="w-4 h-4 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+               </svg>
+               <span>서브 캐릭터 순서는 드래그앤드랍으로 변경할 수 있어요</span>
+             </div>
+           </div>
 
            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                            <!-- 메인 캐릭터 -->
@@ -71,8 +79,27 @@
                 </div>
               </div>
 
-              <!-- 서브 캐릭터들 -->
-              <div v-for="character in subCharacters" :key="character.id" class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg border border-gray-200 dark:border-gray-600">
+              <!-- 서브 캐릭터들 (드래그앤드랍/터치 정렬) -->
+              <div
+                v-for="(character, index) in subReorderList"
+                :key="character.id"
+                class="relative bg-gray-50 dark:bg-gray-700 p-4 rounded-lg border border-gray-200 dark:border-gray-600"
+                draggable="true"
+                :data-sub-index="index"
+                @dragstart="onDragStart(index)"
+                @dragover.prevent="onDragOver(index)"
+                @dragend="onDragEnd"
+                @drop="onDrop"
+                @touchstart="onTouchStart($event, index)"
+                @touchmove.prevent="onTouchMove($event)"
+                @touchend="onTouchEnd"
+              >
+               <div
+                 v-if="isDraggingAny && dropTargetIndex === index"
+                 class="absolute inset-0 border-2 border-dashed border-blue-400/80 bg-blue-50/60 dark:bg-blue-900/80 rounded-lg flex items-center justify-center pointer-events-none z-10"
+               >
+                 <span class="text-xs font-medium text-blue-700 dark:text-white">원하는 위치에 놓아주세요</span>
+               </div>
                <div class="flex justify-between items-center mb-3">
                  <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300">서브 캐릭터</h3>
                  <div class="flex space-x-2">
@@ -90,7 +117,7 @@
                    </button>
                  </div>
                </div>
-               <div class="space-y-2">
+                <div class="space-y-2">
                  <div>
                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">서버:</span>
                    <span class="ml-2 text-sm text-gray-900 dark:text-white">{{ getServerName(character.server_id) }}</span>
@@ -191,6 +218,16 @@
         </div>
       </div>
   </div>
+  
+  <!-- 토스트 팝업 -->
+  <transition name="fade">
+    <div
+      v-if="toast.visible"
+      class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-md bg-gray-900/90 text-white text-sm shadow-lg"
+    >
+      {{ toast.text }}
+    </div>
+  </transition>
 </template>
 
 <script setup lang="ts">
@@ -214,6 +251,7 @@ interface Character {
   name: string
   server_id: string
   is_main: boolean
+  order?: number
   created_at: string
   updated_at: string
   servers: {
@@ -258,7 +296,141 @@ const loadingUserInfo = ref(false)
 // 캐릭터 정보
 const characters = ref<Character[]>([])
 const mainCharacter = computed(() => characters.value.find(c => c.is_main))
-const subCharacters = computed(() => characters.value.filter(c => !c.is_main))
+const subCharacters = computed(() => characters.value.filter(c => !c.is_main).slice().sort((a, b) => (a.order ?? 0) - (b.order ?? 0)))
+
+// DnD/터치 정렬용 로컬 상태
+const subReorderList = ref<Character[]>([])
+const dropTargetIndex = ref<number | null>(null)
+const isDraggingAny = computed(() => draggingIndex.value !== null || touchStartIndex.value !== null)
+watch(subCharacters, (list) => {
+  subReorderList.value = list.slice()
+}, { immediate: true })
+
+const draggingIndex = ref<number | null>(null)
+const touchStartIndex = ref<number | null>(null)
+const touchCurrentIndex = ref<number | null>(null)
+
+const swapItems = (arr: Character[], from: number, to: number) => {
+  if (from === to) return
+  if (from < 0 || to < 0 || from >= arr.length || to >= arr.length) return
+  const removed = arr.splice(from, 1)
+  if (removed.length === 0) return
+  const item = removed[0] as Character
+  arr.splice(to, 0, item)
+}
+
+const onDragStart = (index: number) => {
+  draggingIndex.value = index
+  dropTargetIndex.value = index
+}
+
+const onDragOver = (overIndex: number) => {
+  if (draggingIndex.value === null) return
+  dropTargetIndex.value = overIndex
+}
+
+const onDragEnd = () => {
+  // 드랍 타겟 위에서 drop 이벤트가 발생하지 않으면 취소 처리
+  if (draggingIndex.value !== null) {
+    draggingIndex.value = null
+    dropTargetIndex.value = null
+  }
+}
+
+const onDrop = async () => {
+  if (draggingIndex.value === null || dropTargetIndex.value === null) return
+  // 위치가 동일하면 아무 것도 하지 않음 (API 호출 스킵)
+  if (draggingIndex.value === dropTargetIndex.value) {
+    draggingIndex.value = null
+    dropTargetIndex.value = null
+    return
+  }
+  // 실제 위치 변경 후 저장
+  swapItems(subReorderList.value, draggingIndex.value, dropTargetIndex.value)
+  draggingIndex.value = null
+  dropTargetIndex.value = null
+  await persistSubOrder()
+}
+
+const getTouchedIndex = (event: TouchEvent): number | null => {
+  const touch = (event.touches && event.touches[0]) || (event.changedTouches && event.changedTouches[0])
+  if (!touch) return null
+  const target = document.elementFromPoint(touch.clientX, touch.clientY) as HTMLElement | null
+  if (!target) return null
+  const card = target.closest('[data-sub-index]') as HTMLElement | null
+  if (!card) return null
+  const idxStr = card.getAttribute('data-sub-index')
+  return idxStr ? Number(idxStr) : null
+}
+
+const onTouchStart = (e: TouchEvent, index: number) => {
+  touchStartIndex.value = index
+  touchCurrentIndex.value = index
+  dropTargetIndex.value = index
+}
+
+const onTouchMove = (e: TouchEvent) => {
+  const idx = getTouchedIndex(e)
+  if (idx === null || touchStartIndex.value === null) return
+  if (touchCurrentIndex.value !== idx) {
+    // 하이라이트만 이동 (실제 스왑은 touchEnd에서 1회 수행)
+    dropTargetIndex.value = idx
+  }
+}
+
+const onTouchEnd = async (e: TouchEvent) => {
+  if (touchStartIndex.value === null) return
+  const from = touchStartIndex.value
+  const to = dropTargetIndex.value ?? from
+  // 손 뗀 위치가 유효한 카드(드랍 타겟)가 아니면 취소
+  const idx = getTouchedIndex(e)
+  if (idx === null) {
+    touchStartIndex.value = null
+    touchCurrentIndex.value = null
+    dropTargetIndex.value = null
+    return
+  }
+  // 위치가 동일하면 아무 것도 하지 않음 (API 호출 스킵)
+  if (from === to) {
+    touchStartIndex.value = null
+    touchCurrentIndex.value = null
+    dropTargetIndex.value = null
+    return
+  }
+  // 실제 위치 변경 후 저장
+  swapItems(subReorderList.value, from, to)
+  touchStartIndex.value = null
+  touchCurrentIndex.value = null
+  dropTargetIndex.value = null
+  await persistSubOrder()
+}
+
+const persistSubOrder = async () => {
+  const orderedIds = subReorderList.value.map(c => c.id)
+  const ok = await charactersStore.saveSubCharacterOrder(orderedIds)
+  if (!ok) {
+    // 실패 시 서버에서 다시 로드
+    await charactersStore.fetchCharacters(true)
+    await loadCharacters()
+  } else {
+    // 성공 시 로컬 characters 업데이트
+    // 최신 순서대로 order 값을 재부여하여 정렬 기준과 일치시킴
+    const updatedSubs = subReorderList.value.map((c, idx) => ({ ...c, order: idx + 1 }))
+    subReorderList.value = updatedSubs
+    const main = mainCharacter.value ? [mainCharacter.value] : []
+    characters.value = [...main, ...updatedSubs]
+    showToast('순서가 변경되었습니다.')
+  }
+}
+
+// 토스트
+const toast = ref<{ visible: boolean; text: string }>({ visible: false, text: '' })
+let toastTimer: ReturnType<typeof setTimeout> | null = null
+const showToast = (text: string, durationMs = 2000) => {
+  toast.value = { visible: true, text }
+  if (toastTimer) clearTimeout(toastTimer)
+  toastTimer = setTimeout(() => { toast.value.visible = false }, durationMs)
+}
 
 // 서버 목록
 const servers = ref<Server[]>([])
@@ -456,7 +628,7 @@ const saveCharacter = async () => {
         characters.value[characterIndex] = updatedCharacter
       }
 
-      const response = await $fetch(`/api/characters/${editingCharacter.value.id}`, {
+      const response: any = await $fetch(`/api/characters/${editingCharacter.value.id}`, {
         method: 'PUT',
         body: {
           name: characterForm.value.name,
@@ -489,7 +661,7 @@ const saveCharacter = async () => {
       // 낙관적 업데이트 적용
       characters.value.push(newCharacter)
 
-      const response = await $fetch('/api/characters', {
+      const response: any = await $fetch('/api/characters', {
         method: 'POST',
         body: {
           user_id: currentUser.id,
@@ -551,7 +723,7 @@ const deleteCharacter = async (characterId: string) => {
   }
 
   try {
-    const response = await $fetch(`/api/characters/${characterId}`, {
+    const response: any = await $fetch(`/api/characters/${characterId}`, {
       method: 'DELETE'
     })
 
@@ -603,6 +775,8 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+.fade-enter-active, .fade-leave-active { transition: opacity .2s; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
 .main-character-card {
   background-color: #f0f9ff; /* bg-blue-50 */
 }

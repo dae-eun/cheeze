@@ -32,13 +32,30 @@ export default defineEventHandler(async (event) => {
       }
     }
 
+    // 새 캐릭터 순서 계산: 해당 사용자 캐릭터의 최대 order + 1
+    const { data: maxOrderRow, error: maxOrderError } = await supabaseAdmin
+      .from('characters')
+      .select('order')
+      .eq('user_id', user_id)
+      .order('order', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (maxOrderError) {
+      console.error('Error fetching max order:', maxOrderError)
+      throw createError({ statusCode: 500, statusMessage: '캐릭터 순서 계산 중 오류가 발생했습니다.' })
+    }
+
+    const nextOrder = (maxOrderRow?.order ?? 0) + 1
+
     const { data: character, error } = await supabaseAdmin
       .from('characters')
       .insert({
         user_id,
         name,
         server_id,
-        is_main: is_main || false
+        is_main: is_main || false,
+        order: nextOrder
       })
       .select()
       .maybeSingle()

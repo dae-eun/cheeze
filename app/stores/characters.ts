@@ -6,6 +6,7 @@ interface Character {
   name: string
   server_id: string
   is_main: boolean
+  order?: number
   created_at: string
   updated_at: string
   servers: {
@@ -23,6 +24,21 @@ export const useCharactersStore = defineStore('characters', () => {
   const isCacheValid = () => {
     if (!lastFetched.value) return false
     return Date.now() - lastFetched.value < CACHE_DURATION
+  }
+
+  // 서브 캐릭터 순서 저장
+  const saveSubCharacterOrder = async (orderedIds: string[]) => {
+    try {
+      await $fetch('/api/characters/reorder', {
+        method: 'POST',
+        body: { orderedIds }
+      })
+      await fetchCharacters(true)
+      return true
+    } catch (error) {
+      console.error('Failed to save character order:', error)
+      return false
+    }
   }
 
   // 캐릭터 목록 가져오기
@@ -91,6 +107,7 @@ export const useCharactersStore = defineStore('characters', () => {
     getMainCharacter,
     clearCharacters,
     getCurrentCharacters,
-    isCacheValid
+    isCacheValid,
+    saveSubCharacterOrder
   }
 })

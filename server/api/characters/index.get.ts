@@ -30,12 +30,14 @@ export default defineEventHandler(async (event) => {
         name,
         server_id,
         is_main,
+        order,
         created_at,
         updated_at,
         servers(name)
       `)
       .eq('user_id', user.user_id)
       .order('is_main', { ascending: false })
+      .order('order', { ascending: true })
 
     if (error) {
       console.error('Character fetch error:', error)
