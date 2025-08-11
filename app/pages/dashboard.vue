@@ -374,9 +374,8 @@ interface RecentActivity {
 }
 
 const characters = ref<Character[]>([])
-const todoCharacters = ref<TodoCharacter[]>([])
-const todos = ref<Todo[]>([])
 const loading = ref(true)
+const recentActivities = ref<RecentActivity[]>([])
 
 // 최신 레코드 맵 생성: (character_id,todo_id) 조합마다 가장 최근(completion_date DESC, updated_at DESC)
 const getLatestMap = (rows: TodoCharacter[]) => {
@@ -396,56 +395,10 @@ const getLatestMap = (rows: TodoCharacter[]) => {
   return map
 }
 
-// 전체 통계(최신 상태 기준)
-const totalStats = computed(() => {
-  const latestMap = getLatestMap(todoCharacters.value)
-  const latest = Array.from(latestMap.values())
-  const total = latest.length
-  const completed = latest.filter(tc => tc.is_completed).length
-  const pending = total - completed
-  const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0
-  return { total, completed, pending, completionRate }
-})
+// 서버 집계 응답을 그대로 사용
+const totalStats = ref({ total: 0, completed: 0, pending: 0, completionRate: 0 })
 
-// 캐릭터별 통계
-const characterStats = computed((): CharacterStats[] => {
-  const latestMap = getLatestMap(todoCharacters.value)
-  const latest = Array.from(latestMap.values())
-  return characters.value.map(character => {
-    const characterTodos = latest.filter(tc => tc.character_id === character.id)
-
-    const total = characterTodos.length
-    const completed = characterTodos.filter(tc => tc.is_completed).length
-    const pending = total - completed
-    const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0
-
-    // 일간/주간/주말 통계 계산
-    const calculateCycleStats = (cycle: string) => {
-      const cycleTodos = todos.value.filter(todo => todo.repeat_cycle === cycle)
-      const cycleTodoIds = new Set(cycleTodos.map(todo => todo.id))
-      const cycleCharacterTodos = characterTodos.filter(tc => cycleTodoIds.has(tc.todo_id))
-      const cycleTotal = cycleCharacterTodos.length
-      const cycleCompleted = cycleCharacterTodos.filter(tc => tc.is_completed).length
-      const cyclePending = cycleTotal - cycleCompleted
-      const cycleCompletionRate = cycleTotal > 0 ? Math.round((cycleCompleted / cycleTotal) * 100) : 0
-      return { total: cycleTotal, completed: cycleCompleted, pending: cyclePending, completionRate: cycleCompletionRate }
-    }
-
-    return {
-      id: character.id,
-      name: character.name,
-      serverName: character.servers?.name || '알 수 없음',
-      isMain: character.is_main,
-      total,
-      completed,
-      pending,
-      completionRate,
-      dailyStats: calculateCycleStats('daily'),
-      weeklyStats: calculateCycleStats('weekly'),
-      weekendStats: calculateCycleStats('weekend')
-    }
-  })
-})
+const characterStats = ref<CharacterStats[]>([])
 
 // 일간/주간/주말 숙제 통계 계산 함수
 const calculateStatsByCycle = (cycle: string) => {
@@ -479,25 +432,7 @@ const dailyStats = computed(() => calculateStatsByCycle('daily'))
 const weeklyStats = computed(() => calculateStatsByCycle('weekly'))
 const weekendStats = computed(() => calculateStatsByCycle('weekend'))
 
-// 최근 활동
-const recentActivities = computed((): RecentActivity[] => {
-  // 최근 완료된 항목 5개
-  return todoCharacters.value
-    .filter(tc => tc.is_completed && tc.completed_at)
-    .map(tc => {
-      const todo = todos.value.find(t => t.id === tc.todo_id)
-      const character = characters.value.find(c => c.id === tc.character_id)
-      return {
-        id: tc.id,
-        todoTitle: todo?.title || '알 수 없는 숙제',
-        characterName: character?.name || '알 수 없는 캐릭터',
-        progressType: todo?.progress_type || 'other',
-        completedAt: tc.completed_at!
-      }
-    })
-    .sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime())
-    .slice(0, 5)
-})
+// 최근 활동은 서버에서 경량 집계로 가져옴
 
 // 데이터 로드
 const loadData = async () => {
@@ -506,32 +441,22 @@ const loadData = async () => {
 
   loading.value = true
   try {
-    // 캐릭터 로드
+    // 캐릭터 목록
     const charactersData = await charactersStore.fetchCharacters()
     characters.value = charactersData
 
-    // 숙제 로드
-    const todosData = await todosStore.fetchTodos()
-    todos.value = todosData as any
+    // 개요 통계
+    const overview = await $fetch('/api/dashboard/overview', { method: 'GET' })
+    if ((overview as any)?.success) {
+      totalStats.value = (overview as any).total
+      characterStats.value = (overview as any).characters
+    }
 
-    // 숙제-캐릭터 매핑 로드
-    const todoCharactersPromises = characters.value.map(character =>
-      $fetch(`/api/characters/${character.id}/todos`, {
-        method: 'GET'
-      })
-    )
-    
-    const todoCharactersResponses = await Promise.all(todoCharactersPromises)
-    const allTodoCharacters: TodoCharacter[] = []
-    
-    todoCharactersResponses.forEach(response => {
-      if (response.success && response.todoCharacters) {
-        allTodoCharacters.push(...(response.todoCharacters as unknown as TodoCharacter[]))
-      }
-    })
-    
-    todoCharacters.value = allTodoCharacters
-
+    // 최근 활동
+    const recent = await $fetch('/api/dashboard/recent', { method: 'GET' })
+    if ((recent as any)?.success) {
+      recentActivities.value = (recent as any).activities
+    }
   } catch (error) {
     console.error('Error loading dashboard data:', error)
   } finally {
