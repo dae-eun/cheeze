@@ -5,39 +5,18 @@
       <div class="mb-6 sm:mb-8">
         <h2 class="text-base sm:text-lg font-medium text-gray-900 dark:text-white mb-3 sm:mb-4">캐릭터 선택</h2>
         <div class="relative">
-          <!-- 좌측 버튼 -->
-          <button
-            v-show="canScrollLeft"
-            @click="scrollCharacters(-1)"
-            class="hidden sm:flex absolute -left-1 top-1/2 -translate-y-1/2 z-10 items-center justify-center w-9 h-9 rounded-full bg-white/90 backdrop-blur dark:bg-gray-800/90 border border-gray-200 dark:border-gray-700 shadow hover:bg-gray-50 dark:hover:bg-gray-700"
-            aria-label="왼쪽으로 스크롤"
-          >
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
-          </button>
-
-          <!-- 스크롤 컨테이너 -->
-          <div
-            ref="charScrollRef"
-            class="flex gap-3 sm:gap-4 overflow-x-auto no-scrollbar scroll-smooth cursor-grab active:cursor-grabbing select-none touch-pan-x"
-            @scroll="onCharactersScroll"
-            @mousedown="onDragStart"
-            @touchstart="onTouchStart"
-            style="touch-action: pan-x; -webkit-overflow-scrolling: touch;"
-          >
+          <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
             <button
               v-for="character in characters"
               :key="character.id"
               @click="onCharacterClick(character, $event)"
+              type="button"
               :class="[
-                'shrink-0 w-[170px] sm:w-[220px] p-3 sm:p-4 rounded-xl text-left transition-colors cursor-grab active:cursor-grabbing',
+                'w-full p-3 sm:p-4 rounded-xl text-left transition-colors',
                 selectedCharacter?.id === character.id
                   ? 'bg-blue-600 text-white shadow-lg ring-2 ring-blue-400'
                   : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-600'
               ]"
-              @mousedown.stop="onDragStart"
-              @touchstart.stop="onTouchStart"
-              @touchend="onTouchEndTap(character, $event)"
-              style="touch-action: manipulation;"
             >
               <div class="flex items-center justify-between">
                 <div class="flex items-center gap-2 min-w-0">
@@ -72,20 +51,6 @@
               </div>
             </button>
           </div>
-
-          <!-- 우측 버튼 -->
-          <button
-            v-show="canScrollRight"
-            @click="scrollCharacters(1)"
-            class="hidden sm:flex absolute -right-1 top-1/2 -translate-y-1/2 z-10 items-center justify-center w-9 h-9 rounded-full bg-white/90 backdrop-blur dark:bg-gray-800/90 border border-gray-200 dark:border-gray-700 shadow hover:bg-gray-50 dark:hover:bg-gray-700"
-            aria-label="오른쪽으로 스크롤"
-          >
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-          </button>
-
-          <!-- 그라데이션 가장자리 -->
-          <div v-show="canScrollLeft" class="pointer-events-none absolute inset-y-0 left-0 w-6 bg-gradient-to-r from-gray-50 dark:from-gray-900 to-transparent"></div>
-          <div v-show="canScrollRight" class="pointer-events-none absolute inset-y-0 right-0 w-6 bg-gradient-to-l from-gray-50 dark:from-gray-900 to-transparent"></div>
         </div>
       </div>
 
@@ -994,25 +959,44 @@ const scrollCharacters = (direction: -1 | 1) => {
 const onDragStart = (e: MouseEvent) => {
   const el = charScrollRef.value
   if (!el) return
-  // 드래그로 스크롤 중에는 클릭 액션 방지 플래그 세팅
-  dragClickGuard = true
+  // 새로운 마우스 상호작용 시작 시 가드 초기화
+  dragClickGuard = false
   isDragging = true
   startX = e.pageX - el.offsetLeft
   scrollLeft = el.scrollLeft
+  let hasMouseDragged = false
+
   const onMove = (ev: MouseEvent) => {
     if (!isDragging) return
-    ev.preventDefault()
     const x = ev.pageX - el.offsetLeft
-    const walk = (x - startX)
-    el.scrollLeft = scrollLeft - walk
-    updateScrollButtons()
+    const walk = x - startX
+    if (Math.abs(walk) > 10) {
+      if (!hasMouseDragged) {
+        hasMouseDragged = true
+        // 실제 드래그로 판단될 때만 클릭 가드 활성화
+        dragClickGuard = true
+      }
+      ev.preventDefault()
+      el.scrollLeft = scrollLeft - walk
+      updateScrollButtons()
+    }
   }
-  const onUp = () => {
+
+  const onUp = (ev?: MouseEvent) => {
     isDragging = false
     updateScrollButtons()
+    // 드래그가 없었으면 즉시 클릭 허용, 있었으면 짧게만 클릭 차단
+    if (hasMouseDragged) {
+      setTimeout(() => {
+        dragClickGuard = false
+      }, 50)
+    } else {
+      dragClickGuard = false
+    }
     window.removeEventListener('mousemove', onMove)
     window.removeEventListener('mouseup', onUp)
   }
+
   window.addEventListener('mousemove', onMove)
   window.addEventListener('mouseup', onUp)
 }
@@ -1093,15 +1077,16 @@ const onTouchEndTap = (character: Character, e: TouchEvent) => {
   selectCharacter(character)
 }
 
-const onCharacterClick = (character: Character, e: Event) => {
-  // 드래그 가드가 활성화되어 있으면 클릭 무시
-  if (dragClickGuard) {
-    e.preventDefault()
-    e.stopPropagation()
-    return
+const onCharacterClick = (character: Character, e: MouseEvent | Event) => {
+  // 마우스 인터랙션 중이라도 실제 드래그가 아니면 클릭 허용
+  if (isDragging) {
+    // 드래그로 판정된 경우에만 막고, 아니면 통과
+    if (dragClickGuard) {
+      e.preventDefault?.()
+      e.stopPropagation?.()
+      return
+    }
   }
-  
-  // 캐릭터 선택
   selectCharacter(character)
 }
 
