@@ -4,25 +4,75 @@
       <!-- 캐릭터 선택 버튼들 (최상단) -->
       <div class="mb-6 sm:mb-8">
         <h2 class="text-base sm:text-lg font-medium text-gray-900 dark:text-white mb-3 sm:mb-4">캐릭터 선택</h2>
-        <div class="flex flex-wrap gap-2 sm:gap-3">
+        <div class="relative">
+          <!-- 좌우 네비게이션 -->
           <button
-            v-for="character in characters"
-            :key="character.id"
-            @click="selectCharacter(character)"
-            :class="[
-              'px-3 sm:px-4 py-2 rounded-lg font-medium transition-colors text-sm sm:text-base',
-              selectedCharacter?.id === character.id
-                ? 'bg-blue-600 text-white shadow-lg'
-                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-600'
-            ]"
+            type="button"
+            @click="keenPrev"
+            class="hidden sm:flex absolute -left-2 top-1/2 -translate-y-1/2 z-10 items-center justify-center w-8 h-8 rounded-full bg-white/90 backdrop-blur dark:bg-gray-800/90 border border-gray-200 dark:border-gray-700 shadow hover:bg-gray-50 dark:hover:bg-gray-700"
+            aria-label="이전"
           >
-            <div class="flex items-center space-x-1 sm:space-x-2">
-              <span class="text-xs sm:text-sm">{{ character.name }}</span>
-              <span v-if="character.is_main" class="bg-yellow-500 text-yellow-900 px-1 py-0.5 rounded-full text-xs font-bold">
-                메인
-              </span>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+          </button>
+
+          <div ref="sliderRef" class="keen-slider select-none overflow-hidden px-1">
+            <div
+              v-for="character in characters"
+              :key="character.id"
+              class="keen-slider__slide flex-none basis-[190px] sm:basis-[240px] w-[190px] sm:w-[240px] max-w-[240px]"
+            >
+              <button
+                type="button"
+                @click="selectCharacter(character)"
+                :class="[
+                  'shrink-0 w-full p-3 sm:p-4 rounded-xl text-left transition-colors',
+                  selectedCharacter?.id === character.id
+                    ? 'bg-blue-600 text-white shadow-lg ring-2 ring-blue-400'
+                    : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-600'
+                ]"
+              >
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-2 min-w-0">
+                    <span class="truncate font-semibold text-sm sm:text-base">{{ character.name }}</span>
+                    <span v-if="character.is_main" class="bg-yellow-400/90 text-yellow-900 px-1.5 py-0.5 rounded-full text-[10px] sm:text-xs font-bold whitespace-nowrap">메인</span>
+                  </div>
+                </div>
+                <div class="mt-1 text-[10px] sm:text-xs opacity-75">{{ character.servers?.name }}</div>
+
+                <div class="mt-3 space-y-1.5">
+                  <div class="flex items-center gap-2">
+                    <span class="w-8 text-[10px] sm:text-xs">일간</span>
+                    <div class="w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                      <div class="h-full bg-green-500 transition-all duration-300" :style="{ width: Math.min(getCharacterProgress(character.id).daily || 0, 100) + '%' }"></div>
+                    </div>
+                    <span class="w-8 text-right text-[10px] sm:text-xs">{{ getCharacterProgress(character.id).daily || 0 }}%</span>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <span class="w-8 text-[10px] sm:text-xs">주간</span>
+                    <div class="w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                      <div class="h-full bg-blue-500 transition-all duration-300" :style="{ width: Math.min(getCharacterProgress(character.id).weekly || 0, 100) + '%' }"></div>
+                    </div>
+                    <span class="w-8 text-right text-[10px] sm:text-xs">{{ getCharacterProgress(character.id).weekly || 0 }}%</span>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <span class="w-8 text-[10px] sm:text-xs">주말</span>
+                    <div class="w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                      <div class="h-full bg-orange-500 transition-all duration-300" :style="{ width: Math.min(getCharacterProgress(character.id).weekend || 0, 100) + '%' }"></div>
+                    </div>
+                    <span class="w-8 text-right text-[10px] sm:text-xs">{{ getCharacterProgress(character.id).weekend || 0 }}%</span>
+                  </div>
+                </div>
+              </button>
             </div>
-            <div class="text-xs opacity-75 hidden sm:block">{{ character.servers?.name }}</div>
+          </div>
+
+          <button
+            type="button"
+            @click="keenNext"
+            class="hidden sm:flex absolute -right-2 top-1/2 -translate-y-1/2 z-10 items-center justify-center w-8 h-8 rounded-full bg-white/90 backdrop-blur dark:bg-gray-800/90 border border-gray-200 dark:border-gray-700 shadow hover:bg-gray-50 dark:hover:bg-gray-700"
+            aria-label="다음"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
           </button>
         </div>
       </div>
@@ -813,6 +863,8 @@
 
 <script setup lang="ts">
 import { useAuth } from '~/composables/useAuth'
+import 'keen-slider/keen-slider.min.css'
+import { useKeenSlider } from 'keen-slider/vue'
 
 // 타입 정의
 interface Todo {
@@ -889,6 +941,79 @@ interface PendingChange {
 }
 
 const pendingChanges = ref<Map<string, PendingChange>>(new Map())
+
+// 캐릭터별 진행률 캐시 및 헬퍼 (대시보드 집계 재사용)
+const characterProgressCache = ref(new Map<string, { daily: number; weekly: number; weekend: number }>())
+const getCharacterProgress = (characterId: string) => {
+  return characterProgressCache.value.get(characterId) || { daily: 0, weekly: 0, weekend: 0 }
+}
+
+// 모든 캐릭터 진행률 로드 (경량 API, 대시보드와 동일 포맷 가정)
+const loadAllCharactersProgress = async () => {
+  try {
+    const progressResponse = await $fetch('/api/characters/progress', { method: 'GET' })
+    if ((progressResponse as any)?.success) {
+      const progress = (progressResponse as any).progress as Record<string, any>
+      characters.value.forEach(c => {
+        const p = progress[c.id]
+        if (p) {
+          const dailyRate = p.daily.total > 0 ? Math.round((p.daily.completed / p.daily.total) * 100) : 0
+          const weeklyRate = p.weekly.total > 0 ? Math.round((p.weekly.completed / p.weekly.total) * 100) : 0
+          const weekendRate = p.weekend.total > 0 ? Math.round((p.weekend.completed / p.weekend.total) * 100) : 0
+          characterProgressCache.value.set(c.id, {
+            daily: dailyRate,
+            weekly: weeklyRate,
+            weekend: weekendRate,
+          })
+        }
+      })
+    }
+  } catch (e) {
+    console.error('진행률 불러오기 실패:', e)
+  }
+}
+// Keen Slider
+let sliderRef: any
+let sliderApi: any
+;[sliderRef, sliderApi] = useKeenSlider({
+  initial: 0,
+  mode: 'free-snap',
+  rubberband: true,
+  renderMode: 'performance',
+  drag: true,
+  loop: false,
+  slides: {
+    perView: 'auto',
+    spacing: 14,
+  },
+})
+
+const keenPrev = () => {
+  const api = sliderApi?.value
+  if (!api || !api.track || !api.track.details) return
+  api.prev()
+}
+const keenNext = () => {
+  const api = sliderApi?.value
+  if (!api || !api.track || !api.track.details) return
+  api.next()
+}
+
+// 슬라이더 초기 업데이트: 데이터 로드/리사이즈 후 강제 재계산
+const requestSliderUpdate = async () => {
+  await nextTick()
+  try { sliderApi.value?.update() } catch {}
+}
+
+onMounted(() => {
+  window.addEventListener('resize', requestSliderUpdate)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', requestSliderUpdate)
+})
+
+watch(characters, () => { requestSliderUpdate() })
 
 // 숙제 복사 관련 상태
 const showCopyModal = ref(false)
@@ -1081,6 +1206,12 @@ const loadTodoCharacters = async () => {
 const selectCharacter = async (character: Character) => {
   selectedCharacter.value = character
   await loadTodoCharacters()
+  // 선택된 캐릭터 진행률 캐시 갱신 (간이 계산)
+  characterProgressCache.value.set(character.id, {
+    daily: dailyProgress.value.completionRate,
+    weekly: weeklyProgress.value.completionRate,
+    weekend: monthlyProgress.value.completionRate,
+  })
   
   // URL 업데이트
   await router.push({
@@ -1560,14 +1691,23 @@ onMounted(async () => {
     if (user) {
       await loadCharacters()
       await loadTodos()
+      await requestSliderUpdate()
+      await loadAllCharactersProgress()
+      // 최초 로드 시 진행률 캐시 초기화 (0으로)
+      characters.value.forEach(c => {
+        if (!characterProgressCache.value.has(c.id)) {
+          characterProgressCache.value.set(c.id, { daily: 0, weekly: 0, weekend: 0 })
+        }
+      })
       
       // URL 쿼리 파라미터로 캐릭터 자동 선택
       const characterSelected = selectCharacterFromQuery()
       
       // 쿼리스트링에 캐릭터가 없으면 첫 번째 캐릭터 선택
       if (!characterSelected && characters.value.length > 0 && characters.value[0]) {
-        selectCharacter(characters.value[0])
+        await selectCharacter(characters.value[0])
       }
+      await requestSliderUpdate()
     }
   } catch (error) {
     console.error('Error in onMounted:', error)
