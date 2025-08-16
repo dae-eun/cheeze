@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import { getTokenFromCookie, verifyAccessToken } from '../../../../../utils/auth'
+import { authenticateUser, refreshTokenAndGetUser } from '../../../../../utils/auth'
 
 const config = useRuntimeConfig()
 const supabaseAdmin = createClient(config.public.supabaseUrl, config.supabaseServiceKey)
@@ -8,22 +8,21 @@ export default defineEventHandler(async (event) => {
   try {
     const { id: todoId, characterId } = event.context.params as { id: string; characterId: string }
     
-    // 인증 확인
-    const token = getTokenFromCookie(event, 'access_token')
-    if (!token) {
-      throw createError({
-        statusCode: 401,
-        statusMessage: '인증이 필요합니다.'
-      })
+    // 사용자 인증 확인 (리프레시 토큰 자동 처리)
+    let user = await authenticateUser(event)
+    
+    // 리프레시 토큰으로 인증된 경우, 새로운 액세스 토큰 발급
+    if (user && !user.email) {
+      try {
+        user = await refreshTokenAndGetUser(event, supabaseAdmin)
+      } catch (refreshError) {
+        throw createError({
+          statusCode: 401,
+          statusMessage: '세션이 만료되었습니다. 다시 로그인해주세요.'
+        })
+      }
     }
-
-    const user = await verifyAccessToken(token)
-    if (!user) {
-      throw createError({
-        statusCode: 401,
-        statusMessage: '유효하지 않은 토큰입니다.'
-      })
-    }
+    
     if (!user) {
       throw createError({
         statusCode: 401,
