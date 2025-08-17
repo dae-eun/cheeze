@@ -18,7 +18,21 @@ export default defineNuxtPlugin(() => {
   globalThis.$fetch = async (request, options) => {
     try {
       return await originalFetch(request, options)
-    } catch (error) {
+    } catch (error: any) {
+      const requestUrl = typeof request === 'string' ? request : (request as any)?.url
+      const isAuthRefreshCall = requestUrl && requestUrl.includes('/api/auth/refresh')
+
+      // 401이면 토큰 리프레시 시도 후 원 요청을 한 번 재시도
+      if (error?.statusCode === 401 && !isAuthRefreshCall) {
+        try {
+          await originalFetch('/api/auth/refresh', { method: 'POST' })
+          return await originalFetch(request as any, options as any)
+        } catch (refreshError) {
+          handleAuthError(error)
+          throw error
+        }
+      }
+
       handleAuthError(error)
       throw error
     }
