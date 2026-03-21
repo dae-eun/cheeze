@@ -20,6 +20,7 @@
 - ✅ 숙제 진행 종류 분류 (아르바이트, 던전, 퀘스트, 기타)
 - ✅ 반복 일정 설정 (일간, 주간, 월간)
 - ✅ 실시간 통계 대시보드
+- ✅ 실시간 배팅 (Supabase Realtime)
 - ✅ 반응형 디자인
 
 ## 🛠️ 설치 및 설정
@@ -73,6 +74,9 @@ Supabase SQL Editor에서 다음 순서로 SQL 스크립트를 실행하세요:
 
 -- 7. 샘플 데이터 삽입 (선택사항)
 -- database/7-insert-sample-data.sql 실행
+
+-- 8. 실시간 배팅 테이블 (선택사항)
+-- database/betting-schema.sql 실행
 ```
 
 ### 5. 개발 서버 실행

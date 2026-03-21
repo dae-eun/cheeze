@@ -1,5 +1,6 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 import tailwindcss from '@tailwindcss/vite'
+import { fileURLToPath } from 'node:url'
 
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
@@ -23,12 +24,14 @@ export default defineNuxtConfig({
     cronSecret: process.env.CRON_SECRET
   },
 
-  css: ['~/assets/css/main.css']
-  ,
+  css: ['~/assets/css/main.css'],
+  alias: {
+    '#quizUtils': fileURLToPath(new URL('./server/utils', import.meta.url))
+  },
   vite: {
     plugins: [
       // Tailwind CSS v4 Vite 플러그인
       tailwindcss()
     ]
-  }
+  },
 })

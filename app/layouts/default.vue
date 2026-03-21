@@ -86,6 +86,58 @@
             <span v-if="sidebarOpen || sidebarPinned">길드원 숙제</span>
           </NuxtLink>
 
+          <!-- 미니게임 (하위 메뉴: 실시간 배팅, 이미지 퀴즈) -->
+          <div>
+            <button
+              type="button"
+              @click="minigameMenuOpen = !minigameMenuOpen"
+              class="flex items-center justify-between w-full px-3 py-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              :class="{ 'bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400': $route.path.startsWith('/betting') || $route.path.startsWith('/quiz') }"
+            >
+              <div class="flex items-center space-x-3">
+                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span v-if="sidebarOpen || sidebarPinned">미니게임</span>
+              </div>
+              <svg
+                v-if="sidebarOpen || sidebarPinned"
+                class="w-4 h-4 transition-transform"
+                :class="{ 'rotate-180': minigameMenuOpen }"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            <Transition name="expand">
+              <div v-if="minigameMenuOpen && (sidebarOpen || sidebarPinned)" class="mt-1 ml-4 pl-4 border-l-2 border-gray-200 dark:border-gray-600 space-y-1">
+                <NuxtLink
+                  to="/betting"
+                  class="flex items-center space-x-3 px-3 py-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-sm"
+                  :class="{ 'bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400': $route.path.startsWith('/betting') }"
+                >
+                  <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>실시간 배팅</span>
+                </NuxtLink>
+                <NuxtLink
+                  to="/quiz"
+                  class="flex items-center space-x-3 px-3 py-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-sm"
+                  :class="{ 'bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400': $route.path.startsWith('/quiz') }"
+                >
+                  <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                  </svg>
+                  <span>이미지 퀴즈</span>
+                </NuxtLink>
+              </div>
+            </Transition>
+          </div>
+
           <NuxtLink
             to="/profile"
             class="flex items-center space-x-3 px-3 py-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
@@ -226,6 +278,9 @@ const route = useRoute()
 const sidebarOpen = ref(false)
 const sidebarPinned = ref(false)
 const isMobile = ref(false)
+
+// 미니게임 하위 메뉴 열림 상태 (betting/quiz 경로일 때 기본 열림)
+const minigameMenuOpen = ref(false)
 
 // 모바일 여부 확인
 const checkMobile = () => {
@@ -409,11 +464,19 @@ const getBreadcrumbText = () => {
       return '캐릭터별 숙제 관리'
     case '/todos':
       return '숙제목록'
+    case '/organization-todos':
+      return '길드원 숙제'
+    case '/betting':
+      return '실시간 배팅'
+    case '/quiz':
+      return '이미지 퀴즈'
     case '/profile':
       return '내 정보'
     case '/settings':
       return '설정'
     default:
+      if (path.startsWith('/betting/')) return '배팅 방'
+      if (path.startsWith('/quiz/')) return '이미지 퀴즈'
       return ''
   }
 }
@@ -454,6 +517,17 @@ onMounted(async () => {
   }
 })
 
+// betting/quiz 경로 진입 시 미니게임 메뉴 자동 확장
+watch(
+  () => route.path,
+  (path) => {
+    if (path.startsWith('/betting') || path.startsWith('/quiz')) {
+      minigameMenuOpen.value = true
+    }
+  },
+  { immediate: true }
+)
+
 // 사용자 상태 변화 감지하여 대표캐릭터 로드
 watch(userRef, async (newUser) => {
   console.log('User state changed in default.vue:', newUser)
@@ -463,6 +537,16 @@ watch(userRef, async (newUser) => {
     mainCharacter.value = null
   }
 }, { immediate: false })
+</script>
 
-
-</script> 
+<style scoped>
+.expand-enter-active,
+.expand-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.expand-enter-from,
+.expand-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+</style> 
