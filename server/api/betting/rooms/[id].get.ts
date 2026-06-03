@@ -4,6 +4,36 @@ import { authenticateUser, refreshTokenAndGetUser } from '../../../utils/auth'
 const config = useRuntimeConfig()
 const supabaseAdmin = createClient(config.public.supabaseUrl, config.supabaseServiceKey)
 
+type BettingRound = {
+  id: string
+  betting_duration_minutes: number
+  started_at: string
+  ends_at: string
+  status: 'betting' | 'result_pending' | 'closed'
+  result: 'win' | 'lose' | 'draw' | null
+  created_at: string
+}
+
+async function closeExpiredBettingRound(round: BettingRound): Promise<BettingRound> {
+  if (round.status !== 'betting' || new Date() <= new Date(round.ends_at)) {
+    return round
+  }
+
+  const { data: updatedRound, error } = await supabaseAdmin
+    .from('betting_rounds')
+    .update({ status: 'result_pending' })
+    .eq('id', round.id)
+    .eq('status', 'betting')
+    .select('id, betting_duration_minutes, started_at, ends_at, status, result, created_at')
+    .single()
+
+  if (error || !updatedRound) {
+    return round
+  }
+
+  return updatedRound as BettingRound
+}
+
 export default defineEventHandler(async (event) => {
   try {
     let userData = await authenticateUser(event)
@@ -50,8 +80,12 @@ export default defineEventHandler(async (event) => {
       .eq('room_id', roomId)
       .order('created_at', { ascending: false })
 
-    const activeRound = (rounds || []).find((r) => r.status === 'betting' || r.status === 'result_pending')
-    const currentRound = activeRound || null
+    const normalizedRounds = await Promise.all(
+      ((rounds || []) as BettingRound[]).map(closeExpiredBettingRound)
+    )
+    const activeRound = normalizedRounds.find((r) => r.status === 'betting' || r.status === 'result_pending')
+    const latestRound = normalizedRounds[0] || null
+    const currentRound = activeRound || latestRound
 
     let bets: any[] = []
     let payouts: any[] = []
@@ -61,6 +95,7 @@ export default defineEventHandler(async (event) => {
         .from('bets')
         .select('id, user_id, choice, amount, created_at')
         .eq('round_id', currentRound.id)
+        .order('created_at', { ascending: true })
       bets = roundBets || []
 
       const { data: roundPayouts } = await supabaseAdmin
@@ -76,7 +111,8 @@ export default defineEventHandler(async (event) => {
         ...room,
         participants: participants || [],
         currentRound,
-        rounds: rounds || [],
+        latestRound,
+        rounds: normalizedRounds,
         bets,
         payouts
       }
